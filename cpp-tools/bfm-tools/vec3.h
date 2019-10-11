@@ -1,8 +1,8 @@
 ﻿#pragma once
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include "constant.h"
-using namespace std;
 
 class vec3 {
 public:
@@ -12,13 +12,13 @@ public:
 	double z;
 };
 
-inline istream& operator>>(istream& in, vec3& v) {
+inline std::istream& operator>>(std::istream& in, vec3& v) {
 	in >> v.x >> v.y >> v.z;
 	return in;
 }
 
-inline ostream& operator<<(ostream& out, vec3 v) {
-	out << v.x << " " << v.y << " " << v.z << endl;
+inline std::ostream& operator<<(std::ostream& out, vec3 v) {
+	out << v.x << " " << v.y << " " << v.z << std::endl;
 	return out;
 }
 
@@ -38,27 +38,27 @@ inline vec3 operator+(const vec3 &lhs, const vec3 &rhs) {
 	return ret;
 }
 
-inline vector<vec3> operator+(const vector<vec3> &lhs, const vector<vec3> &rhs) {
-	vector<vec3> res;
+inline std::vector<vec3> operator+(const std::vector<vec3> &lhs, const std::vector<vec3> &rhs) {
+	std::vector<vec3> res;
 	for (int i = 0; i < lhs.size(); i++) 
 		res.push_back(lhs.at(i) + rhs.at(i));
 	return res;
 }
 
-inline vector<double> dot(vector<double> a, vector<double> b) {
+inline std::vector<double> dot(std::vector<double> a, std::vector<double> b) {
 	if (a.size() != b.size()) {
-		cout << "[ERROR] dot size is not compartible." << endl;
-		cout << a.size() << " : " << b.size() << endl;
+		std::cout << "[ERROR] dot size is not compartible." << std::endl;
+		std::cout << a.size() << " : " << b.size() << std::endl;
 		return a;
 	}
-	vector<double> res;
+	std::vector<double> res;
 	for (int i = 0; i<a.size(); i++)
 		res.push_back(a.at(i) * b.at(i));
 	return res;
 }
 
-inline vector<vec3> operator*(vector<vector<vec3>> &a, vector<double> &b) {
-	vector<vec3> res;
+inline std::vector<vec3> operator*(std::vector<std::vector<vec3>> &a, std::vector<double> &b) {
+	std::vector<vec3> res;
 	for (int i = 0; i < N_VERTICE; i++) {
 		vec3 temp;
 		for (int j = 0; j < N_PC; j++)

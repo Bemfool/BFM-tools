@@ -1,0 +1,5 @@
+
+cpp-tools/Debug
+cpp-tools/bfm-tools/Debug
+*.ply
+cpp-tools/.vs

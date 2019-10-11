@@ -1,7 +1,14 @@
 ﻿#include "data.h"
 
-int load(vector<vec3> &shape_mu, vector<double> &shape_ev, vector<vector<vec3>> &shape_pc,
-		 vector<vec3> &tex_mu, vector<double> &tex_ev, vector<vector<vec3>> &tex_pc, vector<vec3> &tl) {
+vector<vec3> shape_mu(N_VERTICE);
+vector<double> shape_ev(N_PC);
+vector<vector<vec3>> shape_pc(N_PC);
+vector<vec3> tex_mu(N_VERTICE);
+vector<double> tex_ev(N_PC);
+vector<vector<vec3>> tex_pc(N_PC);
+vector<vec3> tl(N_FACE);
+
+int load() {
 	cout << "data list: " << endl;
 	ifstream in;
 	int res = 0;

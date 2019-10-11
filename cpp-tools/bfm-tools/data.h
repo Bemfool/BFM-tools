@@ -6,6 +6,8 @@
 #include "constant.h"
 using namespace std;
 
+
+
 #define load_model(model_type) { \
 	cout << "	" << #model_type << " - ";	\
 	in.open(model_type##_path);	\
@@ -46,5 +48,4 @@ using namespace std;
 	}	\
 }
 
-int load(vector<vec3> &shape_mu, vector<double> &shape_ev, vector<vector<vec3>> &shape_pc,
-	vector<vec3> &tex_mu, vector<double> &tex_ev, vector<vector<vec3>> &tex_pc, vector<vec3> &tl);
+int load();
