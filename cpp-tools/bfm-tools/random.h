@@ -4,7 +4,9 @@
 #include <time.h>
 
 /* Function: randn
- * Usage: std::vector<double> seq = randn(n);
+ * Usage: 
+ *		std::vector<double> seq = randn(n);
+ *		std::vector<double> seq = randn(n, scale);
  * Parameters:
  *		n - The number of random element to be generated.
  * -------------------------------------------------------------
@@ -13,4 +15,4 @@
  * miu = 1.
  */
 
-std::vector<double> randn(int n);
+std::vector<double> randn(int n, double scale = 1.0);

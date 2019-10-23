@@ -1,11 +1,11 @@
 ﻿#include "bfm.h"
 
-bool init_bfm() {
+bool init_bfm(d_type type) {
 	for (int i = 0; i < N_PC; i++) {
 		shape_pc[i].resize(N_VERTICE);
 		tex_pc[i].resize(N_VERTICE);
 	}
-	if (load() == FAIL) {
+	if (load(type) == FAIL) {
 		cout << "failed to load all data, and errors are listed above." << endl;
 		cout << "continue or not? [Y/n] ";
 		char option;
@@ -26,6 +26,8 @@ bool init_bfm() {
 	}
 	return true;
 }
+
+
 
 void generate_random_face() {
 	cout << "generate random face" << endl;
@@ -53,7 +55,7 @@ void ply_write(string fn, vector<vec3> shape, vector<vec3> tex, vector<vec3> tl)
 	ofstream out;
 	out.open(fn, std::ios::binary);
 	if (!out) {
-		cout << "Creation of " << fn << " failed." << endl;
+		std::cout << "Creation of " << fn << " failed." << std::endl;
 		return;
 	}
 	out << "ply\n";
