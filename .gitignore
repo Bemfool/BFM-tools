@@ -1,5 +1,10 @@
+x64
 
-cpp-tools/Debug
-cpp-tools/bfm-tools/Debug
+
+Release
+Debug
+bfm-tools/Debug
 *.ply
-cpp-tools/.vs
+.vs
+bfm-tools/inputs-outer.txt
+bfm-tools/inputs-inner.txt

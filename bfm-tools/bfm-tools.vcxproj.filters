@@ -15,16 +15,16 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="bfm-tools.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="data.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="random.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="bfm.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Software\dlib\dlib-19.17\dlib-19.17\dlib\all\source.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="bfm-ex.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -33,9 +33,6 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="constant.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="vec3.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="random.h">
