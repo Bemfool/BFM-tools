@@ -57,6 +57,7 @@ bool bfm::read_parm_from_file(const std::string &filename) {
 	in >> bfm_h5_path;
 	in >> n_vertice >> n_face >> n_id_pc >> n_expr_pc;
 	in >> n_landmark >> landmark_idx_path;
+	use_landmark = (n_landmark == -1) ? false : true;
 	in >> intrinsic_parm[0] >> intrinsic_parm[1] >> intrinsic_parm[2] >> intrinsic_parm[3];
 	in >> shape_mu_h5_path >> shape_ev_h5_path >> shape_pc_h5_path;
 	in >> tex_mu_h5_path >> tex_ev_h5_path >> tex_pc_h5_path;
@@ -91,7 +92,13 @@ void bfm::init_parm() {
 	current_expr.set_size(n_vertice * 3, 1);
 	current_blendshape.set_size(n_vertice * 3, 1);
 
-	landmark_idx.resize(n_landmark);
+	if (use_landmark) {
+		landmark_idx.resize(n_landmark);
+		fp_shape_mu.set_size(n_landmark * 3, 1);
+		fp_shape_pc.set_size(n_landmark * 3, n_id_pc);
+		fp_expr_mu.set_size(n_landmark * 3, 1);
+		fp_expr_pc.set_size(n_landmark * 3, n_expr_pc);
+	}
 }
 
 
@@ -163,6 +170,13 @@ void bfm::generate_face() {
 }
 
 
+void bfm::generate_fp_face() {
+	fp_current_shape = coef2object(shape_coef, fp_shape_mu, fp_shape_pc, shape_ev);
+	fp_current_expr = coef2object(expr_coef, fp_expr_mu, fp_expr_pc, expr_ev);
+	fp_current_blendshape = current_shape + current_expr;
+}
+
+
 dlib::matrix<double> bfm::coef2object(dlib::matrix<double> &coef, dlib::matrix<double> &mu,
 	dlib::matrix<double> &pc, dlib::matrix<double> &ev) {
 	return mu + pc * pointwise_multiply(coef, ev);
@@ -200,7 +214,7 @@ void bfm::ply_write(string fn, bool pick_landmark) {
 		float y = float(current_blendshape(i * 3 + 1));
 		float z = float(current_blendshape(i * 3 + 2));
 		unsigned char r, g, b;
-		if (find(landmark_idx.begin(), landmark_idx.end(), i) != landmark_idx.end()) {
+		if (pick_landmark && find(landmark_idx.begin(), landmark_idx.end(), i) != landmark_idx.end()) {
 			r = 255;
 			g = 0;
 			b = 0;

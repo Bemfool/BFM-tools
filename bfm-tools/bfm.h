@@ -12,6 +12,7 @@ public:
 	void generate_random_face(double shape_scale, double tex_scale, double expr_scale);
 	void generate_average_face() { generate_random_face(0.0); }
 	void generate_face();
+	void generate_fp_face();
 	void ply_write(string fn = "rnd_face.ply", bool pick_landmarks = false);
 	int get_n_id_pc() { return n_id_pc; }
 	int get_n_expr_pc() { return n_expr_pc; }
@@ -24,6 +25,7 @@ public:
 	const dlib::matrix<double> &get_current_tex() { return current_tex; }
 	const dlib::matrix<double> &get_current_expr() { return current_expr; }
 	const dlib::matrix<double> &get_current_blendshape() { return current_blendshape; }
+	const dlib::matrix<double> &get_fp_current_blendshape() { return fp_current_blendshape; }
 	const dlib::matrix<double> &get_tl() { return tl; }
 private:
 	bool read_parm_from_file(const std::string &filename);
@@ -31,6 +33,8 @@ private:
 	bool load_data();
 	dlib::matrix<double> coef2object(dlib::matrix<double> &coef, dlib::matrix<double> &mu,
 		dlib::matrix<double> &pc, dlib::matrix<double> &ev);
+
+	bool use_landmark;
 
 	std::string bfm_h5_path;
 	std::string landmark_idx_path;
@@ -73,12 +77,21 @@ private:
 	dlib::matrix<double> expr_ev;
 	dlib::matrix<double> expr_pc;
 
+	dlib::matrix<double> fp_shape_mu;
+	dlib::matrix<double> fp_shape_pc;
+	dlib::matrix<double> fp_expr_mu;
+	dlib::matrix<double> fp_expr_pc;
+
 	dlib::matrix<double> tl;	/* triangle list */
 
 	dlib::matrix<double> current_shape;
 	dlib::matrix<double> current_tex;
 	dlib::matrix<double> current_expr;
 	dlib::matrix<double> current_blendshape;
+
+	dlib::matrix<double> fp_current_shape;
+	dlib::matrix<double> fp_current_expr;
+	dlib::matrix<double> fp_current_blendshape;
 
 	std::vector<int> landmark_idx;
 };
