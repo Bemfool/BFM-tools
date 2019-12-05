@@ -22,7 +22,9 @@ fx fy cx cy
 /h5_path/to_triangle_lists
 ```
 
-And `landmark.anl` format:
+if landmark is not needed, use `-1 -1` to replace `n_landmark /path/to/landmark.anl`  .
+
+If needed, `landmark.anl` format is as follow:
 
 ```
 landmark_idx[0]
