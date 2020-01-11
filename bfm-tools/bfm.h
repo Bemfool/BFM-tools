@@ -163,7 +163,7 @@ private:
 	double intrinsic_parm[4] = { 0.f };	/* fx fy cx cy */
 
 	double *shape_coef;
-	cv::Mat shape_mu;
+	dlib::matrix<double> shape_mu;
 	dlib::matrix<double> shape_ev;
 	dlib::matrix<double> shape_pc;
 
