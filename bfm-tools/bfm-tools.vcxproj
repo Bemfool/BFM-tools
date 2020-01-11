@@ -158,7 +158,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>D:\Software\dlib\build2\Debug</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>D:\Software\dlib\build2\Debug;D:\Software\OpenCV3\opencv\build\x64\vc14\bin\</AdditionalLibraryDirectories>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies);szip.lib;zlib.lib;hdf5.lib;hdf5_cpp.lib;dlib.lib;opencv_world320.lib;</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -167,12 +167,15 @@
     <ClCompile Include="bfm-ex.cpp" />
     <ClCompile Include="bfm.cpp" />
     <ClCompile Include="random.cpp" />
+    <ClCompile Include="transform.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bfm.h" />
     <ClInclude Include="constant.h" />
     <ClInclude Include="data.h" />
     <ClInclude Include="random.h" />
+    <ClInclude Include="transform.h" />
+    <ClInclude Include="type_utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

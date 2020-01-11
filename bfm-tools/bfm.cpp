@@ -1,19 +1,23 @@
 ﻿#include "bfm.h"
 
-bfm::bfm(const std::string &filename) {
+bfm::bfm(const std::string filename) {
 	init(filename);
 }
 
 
-void bfm::init(const std::string &filename) {
+void bfm::init(const std::string filename) {
 	if (!read_parm_from_file(filename))
 		return;
 	init_parm();
 	load_data();
+	if (use_landmark)
+		extract_landmark();
+	generate_average_face();
+	generate_fp_face();
 }
 
 
-void bfm::data_check() {
+void bfm::data_check() const {
 	bfm_out << "check data\n";
 	bfm_out << "	(1) shape mu: \n";
 	bfm_out << "		Yours:   " << shape_mu(0, 0) << "\n";
@@ -70,17 +74,20 @@ bool bfm::read_parm_from_file(const std::string &filename) {
 
 
 void bfm::init_parm() {
-	shape_coef.set_size(n_id_pc, 1);
+	shape_coef = new double[n_id_pc];
+	fill(shape_coef, shape_coef + n_id_pc, 0.f);
 	shape_mu.set_size(n_vertice * 3, 1);
 	shape_ev.set_size(n_id_pc, 1);
 	shape_pc.set_size(n_vertice * 3, n_id_pc);
 
-	tex_coef.set_size(n_id_pc, 1);
+	tex_coef = new double[n_id_pc];
+	fill(tex_coef, tex_coef + n_id_pc, 0.f);
 	tex_mu.set_size(n_vertice * 3, 1);
 	tex_ev.set_size(n_id_pc, 1);
 	tex_pc.set_size(n_vertice * 3, n_id_pc);
 
-	expr_coef.set_size(n_expr_pc, 1);
+	expr_coef = new double[n_expr_pc];
+	fill(expr_coef, expr_coef + n_expr_pc, 0.f);
 	expr_mu.set_size(n_vertice * 3, 1);
 	expr_ev.set_size(n_expr_pc, 1);
 	expr_pc.set_size(n_vertice * 3, n_expr_pc);
@@ -145,6 +152,46 @@ bool bfm::load_data() {
 	return true;
 }
 
+void bfm::extract_landmark() {
+	for (int i = 0; i<n_landmark; i++) {
+		int idx = landmark_idx[i];
+		fp_shape_mu(i * 3) = shape_mu(idx * 3);
+		fp_shape_mu(i * 3 + 1) = shape_mu(idx * 3 + 1);
+		fp_shape_mu(i * 3 + 2) = shape_mu(idx * 3 + 2);
+		fp_expr_mu(i * 3) = expr_mu(idx * 3);
+		fp_expr_mu(i * 3 + 1) = expr_mu(idx * 3 + 1);
+		fp_expr_mu(i * 3 + 2) = expr_mu(idx * 3 + 2);
+		for (int j = 0; j<n_id_pc; j++) {
+			fp_shape_pc(i * 3, j) = shape_pc(idx * 3, j);
+			fp_shape_pc(i * 3 + 1, j) = shape_pc(idx * 3 + 1, j);
+			fp_shape_pc(i * 3 + 2, j) = shape_pc(idx * 3 + 2, j);
+			// std::cout << "loading fp " <<  fp_shape_pc(i*3) << " " << fp_shape_pc(i*3+1) << " " << fp_shape_pc(i*3+2) << std::endl;		
+		}
+		for (int j = 0; j<n_expr_pc; j++) {
+			fp_expr_pc(i * 3, j) = expr_pc(idx * 3, j);
+			fp_expr_pc(i * 3 + 1, j) = expr_pc(idx * 3 + 1, j);
+			fp_expr_pc(i * 3 + 2, j) = expr_pc(idx * 3 + 2, j);
+		}
+	}
+}
+
+void bfm::print_external_parm() const {
+	bfm_out << "yaw: " << external_parm[0] << "\n";
+	bfm_out << "pitch: " << external_parm[1] << "\n";
+	bfm_out << "roll: " << external_parm[2] << "\n";
+	bfm_out << "tx: " << external_parm[3] << "\n";
+	bfm_out << "ty: " << external_parm[4] << "\n";
+	bfm_out << "tz: " << external_parm[5] << "\n";
+}
+
+
+void bfm::print_intrinsic_parm() const {
+	bfm_out << "fx: " << intrinsic_parm[0] << "\n";
+	bfm_out << "fy: " << intrinsic_parm[1] << "\n";
+	bfm_out << "cx: " << intrinsic_parm[2] << "\n";
+	bfm_out << "cy: " << intrinsic_parm[3] << "\n";
+}
+
 
 void bfm::generate_random_face(double scale) {
 	shape_coef = randn(n_id_pc, scale);
@@ -163,28 +210,71 @@ void bfm::generate_random_face(double shape_scale, double tex_scale, double expr
 
 
 void bfm::generate_face() {
-	current_shape = coef2object(shape_coef, shape_mu, shape_pc, shape_ev);
-	current_tex = coef2object(tex_coef, tex_mu, tex_pc, tex_ev);
-	current_expr = coef2object(expr_coef, expr_mu, expr_pc, expr_ev);
+	current_shape = coef2object(shape_coef, shape_mu, shape_pc, shape_ev, n_id_pc);
+	current_tex = coef2object(tex_coef, tex_mu, tex_pc, tex_ev, n_id_pc);
+	current_expr = coef2object(expr_coef, expr_mu, expr_pc, expr_ev, n_expr_pc);
 	current_blendshape = current_shape + current_expr;
 }
 
 
 void bfm::generate_fp_face() {
-	fp_current_shape = coef2object(shape_coef, fp_shape_mu, fp_shape_pc, shape_ev);
-	fp_current_expr = coef2object(expr_coef, fp_expr_mu, fp_expr_pc, expr_ev);
-	fp_current_blendshape = current_shape + current_expr;
+	fp_current_shape = coef2object(shape_coef, fp_shape_mu, fp_shape_pc, shape_ev, n_id_pc);
+	fp_current_expr = coef2object(expr_coef, fp_expr_mu, fp_expr_pc, expr_ev, n_expr_pc);
+	fp_current_blendshape = fp_current_shape + fp_current_expr;
 }
 
 
-dlib::matrix<double> bfm::coef2object(dlib::matrix<double> &coef, dlib::matrix<double> &mu,
-	dlib::matrix<double> &pc, dlib::matrix<double> &ev) {
-	return mu + pc * pointwise_multiply(coef, ev);
+void bfm::generate_rotation_matrix() {
+	const double &yaw = external_parm[0];
+	const double &pitch = external_parm[1];
+	const double &roll = external_parm[2];
+	const double &tx = external_parm[3];
+	const double &ty = external_parm[4];
+	const double &tz = external_parm[5];
+
+	double c1 = cos(yaw   * M_PI / 180.0), s1 = sin(yaw   * M_PI / 180.0);
+	double c2 = cos(pitch * M_PI / 180.0), s2 = sin(pitch * M_PI / 180.0);
+	double c3 = cos(roll  * M_PI / 180.0), s3 = sin(roll  * M_PI / 180.0);
+
+	R = c2 * c1, s3 * s2 * c1 - c3 * s1, c3 * s2 * c1 + s3 * s1,
+		c2 * s1, s3 * s2 * s1 + c3 * c1, c3 * s2 * s1 - s3 * c1,
+		-s2, s3 * c2, c3 * c2;
+}
+
+void bfm::accumulate_external_parm(double *x) {
+	/* in every iteration, P = R`(RP+t)+t`,
+	* R_{new} = R`R_{old}
+	* t_{new} = R`t_{old} + t`
+	*/
+
+	double dyaw = x[0];
+	double dpitch = x[1];
+	double droll = x[2];
+	double dtx = x[3];
+	double dty = x[4];
+	double dtz = x[5];
+
+	/* accumulate rotation */
+	dlib::matrix<double> dR(3, 3);
+	dR = 1.0, -dyaw, dpitch,
+		dyaw, 1.0, -droll,
+		-dpitch, droll, 1.0;
+	R = R * dR;
+
+	/* accumulate translation */
+	dlib::matrix<double> T(3, 1);
+	T = external_parm[3],
+		external_parm[4],
+		external_parm[5];
+	T = dR * T;
+	external_parm[3] = T(0, 0) + dtx;
+	external_parm[4] = T(1, 0) + dty;
+	external_parm[5] = T(2, 0) + dtz;
 }
 
 
-void bfm::ply_write(string fn, bool pick_landmark) {
-	ofstream out;
+void bfm::ply_write(std::string fn, long mode) const {
+	std::ofstream out;
 	/* Note: In Linux Cpp, we should use std::ios::bfm_out as flag, which is not necessary in Windows */
 	out.open(fn, std::ios::out | std::ios::binary);
 	if (!out) {
@@ -206,24 +296,37 @@ void bfm::ply_write(string fn, bool pick_landmark) {
 	out << "end_header\n";
 
 	int cnt = 0;
-	for (int i = 0; i < 68; i++)
-		std::cout << " " << landmark_idx[i] << std::endl;
-
 	for (int i = 0; i < n_vertice; i++) {
-		float x = float(current_blendshape(i * 3));
-		float y = float(current_blendshape(i * 3 + 1));
-		float z = float(current_blendshape(i * 3 + 2));
+		float x, y, z;
+		if (mode & NO_EXPR) {
+			x = float(current_shape(i * 3));
+			y = float(current_shape(i * 3 + 1));
+			z = float(current_shape(i * 3 + 2));
+		}
+		else {
+			x = float(current_blendshape(i * 3));
+			y = float(current_blendshape(i * 3 + 1));
+			z = float(current_blendshape(i * 3 + 2));
+		}
+
+		if (mode & CAMERA_COORD) {
+			transform(external_parm, x, y, z);
+			y = -y; z = -z;
+		}
+
 		unsigned char r, g, b;
-		if (pick_landmark && find(landmark_idx.begin(), landmark_idx.end(), i) != landmark_idx.end()) {
+		if ((mode & PICK_FP) && find(landmark_idx.begin(), landmark_idx.end(), i) != landmark_idx.end()) {
 			r = 255;
 			g = 0;
 			b = 0;
 			cnt++;
-		} else {
+		}
+		else {
 			r = current_tex(i * 3);
 			g = current_tex(i * 3 + 1);
 			b = current_tex(i * 3 + 2);
 		}
+
 		out.write((char *)&x, sizeof(x));
 		out.write((char *)&y, sizeof(y));
 		out.write((char *)&z, sizeof(z));
@@ -231,7 +334,7 @@ void bfm::ply_write(string fn, bool pick_landmark) {
 		out.write((char *)&g, sizeof(g));
 		out.write((char *)&b, sizeof(b));
 	}
-	if (pick_landmark && cnt != n_landmark) {
+	if ((mode & PICK_FP) && cnt != n_landmark) {
 		bfm_out << "[ERROR] Pick too less landmarks.\n";
 		bfm_out << "Number of picked points is " << cnt << ".\n";
 	}
@@ -247,4 +350,39 @@ void bfm::ply_write(string fn, bool pick_landmark) {
 		out.write((char *)&z, sizeof(z));
 	}
 	out.close();
+}
+
+void bfm::ply_write_fp(std::string fn) const {
+	std::ofstream out;
+	/* Note: In Linux Cpp, we should use std::ios::bfm_out as flag, which is not necessary in Windows */
+	out.open(fn, std::ios::out | std::ios::binary);
+	if (!out) {
+		bfm_out << "Creation of " << fn.c_str() << " failed.\n";
+		return;
+	}
+	out << "ply\n";
+	out << "format binary_little_endian 1.0\n";
+	out << "comment Made from the 3D Morphable Face Model of the Univeristy of Basel, Switzerland.\n";
+	out << "element vertex " << n_landmark << "\n";
+	out << "property float x\n";
+	out << "property float y\n";
+	out << "property float z\n";
+	out << "end_header\n";
+
+	int cnt = 0;
+	for (int i = 0; i < n_landmark; i++) {
+		float x, y, z;
+		x = float(fp_current_blendshape(i * 3));
+		y = float(fp_current_blendshape(i * 3 + 1));
+		z = float(fp_current_blendshape(i * 3 + 2));
+		out.write((char *)&x, sizeof(x));
+		out.write((char *)&y, sizeof(y));
+		out.write((char *)&z, sizeof(z));
+	}
+
+	out.close();
+}
+
+dlib::matrix<double> bfm::get_fp_current_blendshape_transformed() const {
+	return matrix_transform(R, external_parm[3], external_parm[4], external_parm[5], fp_current_blendshape);
 }
