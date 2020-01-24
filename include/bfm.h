@@ -1,10 +1,8 @@
 ﻿#pragma once
-#define _USE_MATH_DEFINES
 #include "data.h"
 #include "random.h"
 #include "transform.h"
 #include "type_utils.h"
-#include <math.h>
 
 class bfm {
 public:
@@ -18,27 +16,30 @@ public:
 	void generate_face();
 	void generate_fp_face();
 	template<typename T>
-	dlib::matrix<T> generate_fp_face(const T * const shape_coef_, const T * const expr_coef_) const {
+	dlib::matrix<T> generate_fp_face(const T * const shape_coef_,const T * const expr_coef_) const {
 		dlib::matrix<T> fp_current_shape_ = coef2object(shape_coef_, fp_shape_mu, fp_shape_pc, shape_ev, n_id_pc);
 		dlib::matrix<T> fp_current_expr_ = coef2object(expr_coef_, fp_expr_mu, fp_expr_pc, expr_ev, n_expr_pc);
-		dlib::matrix<T> fp_current_blendshape_ = fp_current_shape_ + fp_current_expr_;
+		dlib::matrix<T> fp_current_blendshape_ = fp_current_shape_ + fp_current_expr_;	
 		return fp_current_blendshape_;
 	}
 	template<typename T>
 	dlib::matrix<T> generate_fp_face_by_shape(const T * const shape_coef_) const {
 		dlib::matrix<T> fp_current_shape_ = coef2object(shape_coef_, fp_shape_mu, fp_shape_pc, shape_ev, n_id_pc);
 		dlib::matrix<T> fp_current_expr_ = dlib::matrix_cast<T>(fp_current_expr);
-		dlib::matrix<T> fp_current_blendshape_ = fp_current_shape_ + fp_current_expr_;
-		return fp_current_blendshape_;
+		dlib::matrix<T> fp_current_blendshape_ = fp_current_shape_ + fp_current_expr_;	
+		return fp_current_blendshape_;		
 	}
 	template<typename T>
 	dlib::matrix<T> generate_fp_face_by_expr(const T * const expr_coef_) const {
 		dlib::matrix<T> fp_current_shape_ = dlib::matrix_cast<T>(fp_current_shape);
 		dlib::matrix<T> fp_current_expr_ = coef2object(expr_coef_, fp_expr_mu, fp_expr_pc, expr_ev, n_expr_pc);
-		dlib::matrix<T> fp_current_blendshape_ = fp_current_shape_ + fp_current_expr_;
-		return fp_current_blendshape_;
+		dlib::matrix<T> fp_current_blendshape_ = fp_current_shape_ + fp_current_expr_;	
+		return fp_current_blendshape_;		
 	}
+	void generate_transform_matrix();
 	void generate_rotation_matrix();
+	void generate_translation_vector();
+	void generate_external_parameter();
 	void accumulate_external_parm(double *x);
 	void ply_write(std::string fn = "face.ply", long mode = NONE_MODE) const;
 	void ply_write_fp(std::string fn = "fp_face.ply") const;
@@ -48,7 +49,7 @@ public:
 	const int get_n_face() const { return n_face; }
 	const int get_n_vertice() const { return n_vertice; }
 	const int get_n_landmark() const { return n_landmark; }
-
+	
 	double *get_mutable_shape_coef() { return shape_coef; }
 	double *get_mutable_tex_coef() { return tex_coef; }
 	double *get_mutable_expr_coef() { return expr_coef; }
@@ -78,7 +79,7 @@ public:
 		set_yaw(yaw); set_pitch(pitch); set_roll(roll);
 	}
 	void set_R(dlib::matrix<double> R_) { R = R_; }
-	void set_R(cv::Mat R_) {
+	void set_R(cv::Mat R_) { 
 		R(0, 0) = R_.at<double>(0, 0); R(0, 1) = R_.at<double>(0, 1); R(0, 2) = R_.at<double>(0, 2);
 		R(1, 0) = R_.at<double>(1, 0); R(1, 1) = R_.at<double>(1, 1); R(1, 2) = R_.at<double>(1, 2);
 		R(2, 0) = R_.at<double>(2, 0); R(2, 1) = R_.at<double>(2, 1); R(2, 2) = R_.at<double>(2, 2);
@@ -95,20 +96,21 @@ public:
 	dlib::matrix<double> get_fp_current_blendshape_transformed() const;
 	const dlib::matrix<double> &get_tl() const { return tl; }
 
-	void print_fp_shape_mu() const { bfm_out << "landmark - shape average:\n" << fp_shape_mu; }
-	void print_fp_shape_pc() const { bfm_out << "landmark - shape pc:\n" << fp_shape_pc; }
+	void print_fp_shape_mu() const { bfm_out << "landmark - shape average:\n"  << fp_shape_mu; }
+	void print_fp_shape_pc() const { bfm_out << "landmark - shape pc:\n"	   << fp_shape_pc; }
 	void print_shape_ev() const { bfm_out << "shape variance:\n " << shape_ev; }
 	void print_external_parm() const;
 	void print_intrinsic_parm() const;
-	void print_shape_coef() const {
+	void print_shape_coef() const { 
 		bfm_out << "shape coef:\n";
-		for (int i = 0; i<n_id_pc; i++) bfm_out << shape_coef[i] << "\n";
+		for(int i=0; i<n_id_pc; i++) bfm_out << shape_coef[i] << "\n";
 	}
-	void print_expr_coef() const {
+	void print_expr_coef() const { 
 		bfm_out << "expression coef:\n";
-		for (int i = 0; i<n_expr_pc; i++) bfm_out << expr_coef[i] << "\n";
+		for(int i=0; i<n_expr_pc; i++) bfm_out << expr_coef[i] << "\n";
 	}
-	void print_R() const { bfm_out << "R: \n" << R; }
+	inline void print_R() const { bfm_out << "R: \n" << R; }
+	inline void print_T() const { bfm_out << "T: \n" << T; }
 
 private:
 	bool read_parm_from_file(const std::string &filename);
@@ -117,9 +119,9 @@ private:
 	void extract_landmark();
 	template<typename T>
 	dlib::matrix<T> coef2object(const T *const &coef, const dlib::matrix<double> &mu,
-		const dlib::matrix<double> &pc, const dlib::matrix<double> &ev, int len) const {
+							    const dlib::matrix<double> &pc, const dlib::matrix<double> &ev, int len) const { 
 		dlib::matrix<T> coef_(len, 1);
-		for (int i = 0; i<len; i++)
+		for(int i=0; i<len; i++)
 			coef_(i) = coef[i];
 
 		dlib::matrix<T> mu_ = dlib::matrix_cast<T>(mu);
@@ -157,8 +159,9 @@ private:
 	/* ZYX - euler angle */
 	/* yaw:   rotate around z axis */
 	/* pitch: rotate around y axis */
-	/* roll:  rotate around x axis */
+    /* roll:  rotate around x axis */
 	dlib::matrix<double, 3, 3> R;
+	dlib::matrix<double, 3, 1> T;
 	double external_parm[6] = { 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };	/* yaw pitch roll tx ty tz */
 	double intrinsic_parm[4] = { 0.f };	/* fx fy cx cy */
 

@@ -2,10 +2,10 @@
 #include <string>
 
 #ifdef USE_QT
-#include <QDebug>
-#define bfm_out qDebug()
+	#include <QDebug>
+	#define bfm_out qDebug()
 #else
-#define bfm_out std::cout
+	#define bfm_out std::cout
 #endif
 
 /* just for my database */
@@ -19,11 +19,17 @@
 // 1744.327628674942 1747.838275588676 800 600
 
 enum model_write_mode {
-	NONE_MODE = 0L << 0,
-	PICK_FP = 1L << 0,
-	CAMERA_COORD = 1L << 1,
-	NO_EXPR = 1L << 2,
+	NONE_MODE      = 0L << 0, 
+	PICK_FP 	   = 1L << 0,
+	CAMERA_COORD   = 1L << 1,
+	NO_EXPR        = 1L << 2,
 	EXTRA_EXT_PARM = 1L << 3,
+};
+
+enum solve_ext_parm_mode {
+	USE_CERES  = 0L << 0,
+	USE_OPENCV = 1L << 0,
+	USE_LINEARIZED_RADIANS = 1L << 1,
 };
 
 
