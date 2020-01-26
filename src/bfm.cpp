@@ -288,6 +288,9 @@ void bfm::generate_external_parameter()
         external_parm[1] = atan2(-R(2,0), sy);
         external_parm[0] = 0;
     }
+	external_parm[3] = T(0, 0);
+	external_parm[4] = T(1, 0);
+	external_parm[5] = T(2, 0);
 	bfm_out << "success\n";
 }
 
@@ -300,9 +303,9 @@ void bfm::accumulate_external_parm(double *x) {
 
 	dlib::matrix<double, 3, 3> dR;
 	dlib::matrix<double, 3, 1> dT;	
-	double dyaw = x[0];
+	double dyaw   = x[0];
 	double dpitch = x[1];
-	double droll = x[2];
+	double droll  = x[2];
 	double dtx = x[3];
 	double dty = x[4];
 	double dtz = x[5];

@@ -59,6 +59,7 @@ public:
 	const double *get_external_parm() const { return external_parm; }
 	const double *get_intrinsic_parm() const { return intrinsic_parm; }
 	const dlib::matrix<double> get_R() const { return R; }
+	const dlib::matrix<double> get_T() const { return T; }
 
 	const double get_fx() const { return intrinsic_parm[0]; }
 	const double get_fy() const { return intrinsic_parm[1]; }
@@ -84,6 +85,7 @@ public:
 		R(1, 0) = R_.at<double>(1, 0); R(1, 1) = R_.at<double>(1, 1); R(1, 2) = R_.at<double>(1, 2);
 		R(2, 0) = R_.at<double>(2, 0); R(2, 1) = R_.at<double>(2, 1); R(2, 2) = R_.at<double>(2, 2);
 	}
+
 	void set_tx(double tx) { external_parm[3] = tx; }
 	void set_ty(double ty) { external_parm[4] = ty; }
 	void set_tz(double tz) { external_parm[5] = tz; }
