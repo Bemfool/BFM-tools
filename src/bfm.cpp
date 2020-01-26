@@ -6,9 +6,9 @@ bfm::bfm(const std::string filename) {
 
 
 void bfm::init(const std::string filename) {
-	if (!read_parm_from_file(filename))
+	if (!read_params_from_file(filename))
 		return;
-	init_parm();
+	init_params();
 	load_data();
 	if(use_landmark) 
 		extract_landmark();
@@ -52,7 +52,7 @@ void bfm::data_check() const {
 }
 
 
-bool bfm::read_parm_from_file(const std::string &filename) {
+bool bfm::read_params_from_file(const std::string &filename) {
 	ifstream in(filename, std::ios::in);
 	if (!in) {
 		bfm_out << "[ERROR] Can't open " << filename.c_str() << ".\n";
@@ -62,7 +62,7 @@ bool bfm::read_parm_from_file(const std::string &filename) {
 	in >> n_vertice >> n_face >> n_id_pc >> n_expr_pc;
 	in >> n_landmark >> landmark_idx_path;
 	use_landmark = (n_landmark == -1) ? false : true;
-	in >> intrinsic_parm[0] >> intrinsic_parm[1] >> intrinsic_parm[2] >> intrinsic_parm[3];
+	in >> intrinsic_params[0] >> intrinsic_params[1] >> intrinsic_params[2] >> intrinsic_params[3];
 	in >> shape_mu_h5_path >> shape_ev_h5_path >> shape_pc_h5_path;
 	in >> tex_mu_h5_path >> tex_ev_h5_path >> tex_pc_h5_path;
 	in >> expr_mu_h5_path >> expr_ev_h5_path >> expr_pc_h5_path;
@@ -73,7 +73,7 @@ bool bfm::read_parm_from_file(const std::string &filename) {
 }
 
 
-void bfm::init_parm() {
+void bfm::init_params() {
 	shape_coef = new double[n_id_pc];
 	fill(shape_coef, shape_coef + n_id_pc, 0.f);
 	shape_mu.set_size(n_vertice * 3, 1);
@@ -175,24 +175,24 @@ void bfm::extract_landmark() {
 	}
 }
 
-void bfm::print_external_parm() const {
-	bfm_out << "yaw: "   << external_parm[0] << " ";
-	bfm_out << "(" << (external_parm[0] * 180.0 / M_PI) << "\")\n";
-	bfm_out << "pitch: " << external_parm[1] << " ";
-	bfm_out << "(" << (external_parm[1] * 180.0 / M_PI) << "\")\n";
-	bfm_out << "roll: "  << external_parm[2] << " ";
-	bfm_out << "(" << (external_parm[2] * 180.0 / M_PI) << "\")\n";
-	bfm_out << "tx: "    << external_parm[3] << "\n";
-	bfm_out << "ty: "    << external_parm[4] << "\n";
-	bfm_out << "tz: "    << external_parm[5] << "\n";
+void bfm::print_extrinsic_params() const {
+	bfm_out << "yaw: "   << extrinsic_params[0] << " ";
+	bfm_out << "(" << (extrinsic_params[0] * 180.0 / M_PI) << "\")\n";
+	bfm_out << "pitch: " << extrinsic_params[1] << " ";
+	bfm_out << "(" << (extrinsic_params[1] * 180.0 / M_PI) << "\")\n";
+	bfm_out << "roll: "  << extrinsic_params[2] << " ";
+	bfm_out << "(" << (extrinsic_params[2] * 180.0 / M_PI) << "\")\n";
+	bfm_out << "tx: "    << extrinsic_params[3] << "\n";
+	bfm_out << "ty: "    << extrinsic_params[4] << "\n";
+	bfm_out << "tz: "    << extrinsic_params[5] << "\n";
 }
 
 
-void bfm::print_intrinsic_parm() const {
-	bfm_out << "fx: " << intrinsic_parm[0] << "\n";
-	bfm_out << "fy: " << intrinsic_parm[1] << "\n";
-	bfm_out << "cx: " << intrinsic_parm[2] << "\n";
-	bfm_out << "cy: " << intrinsic_parm[3] << "\n";
+void bfm::print_intrinsic_params() const {
+	bfm_out << "fx: " << intrinsic_params[0] << "\n";
+	bfm_out << "fy: " << intrinsic_params[1] << "\n";
+	bfm_out << "cx: " << intrinsic_params[2] << "\n";
+	bfm_out << "cy: " << intrinsic_params[3] << "\n";
 }
 
 
@@ -238,9 +238,9 @@ void bfm::generate_fp_face() {
 void bfm::generate_rotation_matrix() 
 {
 	bfm_out << "generate rotation matrix - ";
-	const double &yaw   = external_parm[0];
-	const double &pitch = external_parm[1];
-	const double &roll  = external_parm[2];
+	const double &yaw   = extrinsic_params[0];
+	const double &pitch = extrinsic_params[1];
+	const double &roll  = extrinsic_params[2];
 	R = euler2matrix(yaw, pitch, roll, false);
 	bfm_out << "success\n";
 	print_R();
@@ -250,9 +250,9 @@ void bfm::generate_rotation_matrix()
 void bfm::generate_translation_vector()
 {
 	bfm_out << "generate translation vector - ";	
-	const double &tx = external_parm[3];
-	const double &ty = external_parm[4];
-	const double &tz = external_parm[5];
+	const double &tx = extrinsic_params[3];
+	const double &ty = extrinsic_params[4];
+	const double &tz = extrinsic_params[5];
 	T = tx, ty, tz;	
 	bfm_out << "success\n";
 	print_T();
@@ -278,24 +278,24 @@ void bfm::generate_external_parameter()
 
     if (!singular) 
 	{
-        external_parm[2] = atan2(R(2,1) , R(2,2));
-        external_parm[1] = atan2(-R(2,0), sy);
-        external_parm[0] = atan2(R(1,0), R(0,0));
+        extrinsic_params[2] = atan2(R(2,1) , R(2,2));
+        extrinsic_params[1] = atan2(-R(2,0), sy);
+        extrinsic_params[0] = atan2(R(1,0), R(0,0));
     } 
 	else 
 	{
-        external_parm[2] = atan2(-R(1,2), R(1,1));
-        external_parm[1] = atan2(-R(2,0), sy);
-        external_parm[0] = 0;
+        extrinsic_params[2] = atan2(-R(1,2), R(1,1));
+        extrinsic_params[1] = atan2(-R(2,0), sy);
+        extrinsic_params[0] = 0;
     }
-	external_parm[3] = T(0, 0);
-	external_parm[4] = T(1, 0);
-	external_parm[5] = T(2, 0);
+	extrinsic_params[3] = T(0, 0);
+	extrinsic_params[4] = T(1, 0);
+	extrinsic_params[5] = T(2, 0);
 	bfm_out << "success\n";
 }
 
 
-void bfm::accumulate_external_parm(double *x) {
+void bfm::accumulate_extrinsic_params(double *x) {
 	/* in every iteration, P = R`(RP+t)+t`, 
 	 * R_{new} = R`R_{old}
 	 * t_{new} = R`t_{old} + t`
@@ -356,7 +356,7 @@ void bfm::ply_write(std::string fn, long mode) const {
 		}
 
 		if(mode & CAMERA_COORD) {
-			transform(external_parm, x, y, z);
+			transform(extrinsic_params, x, y, z);
 			y = -y; z = -z;
 		}
 

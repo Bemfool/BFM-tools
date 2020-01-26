@@ -40,7 +40,7 @@ public:
 	void generate_rotation_matrix();
 	void generate_translation_vector();
 	void generate_external_parameter();
-	void accumulate_external_parm(double *x);
+	void accumulate_extrinsic_params(double *x);
 	void ply_write(std::string fn = "face.ply", long mode = NONE_MODE) const;
 	void ply_write_fp(std::string fn = "fp_face.ply") const;
 
@@ -54,28 +54,28 @@ public:
 	double *get_mutable_tex_coef() { return tex_coef; }
 	double *get_mutable_expr_coef() { return expr_coef; }
 
-	double *get_mutable_external_parm() { return external_parm; }
-	double *get_mutable_intrinsic_parm() { return intrinsic_parm; }
-	const double *get_external_parm() const { return external_parm; }
-	const double *get_intrinsic_parm() const { return intrinsic_parm; }
+	double *get_mutable_extrinsic_params() { return extrinsic_params; }
+	double *get_mutable_intrinsic_params() { return intrinsic_params; }
+	const double *get_extrinsic_params() const { return extrinsic_params; }
+	const double *get_intrinsic_params() const { return intrinsic_params; }
 	const dlib::matrix<double> get_R() const { return R; }
 	const dlib::matrix<double> get_T() const { return T; }
 
-	const double get_fx() const { return intrinsic_parm[0]; }
-	const double get_fy() const { return intrinsic_parm[1]; }
-	const double get_cx() const { return intrinsic_parm[2]; }
-	const double get_cy() const { return intrinsic_parm[3]; }
+	const double get_fx() const { return intrinsic_params[0]; }
+	const double get_fy() const { return intrinsic_params[1]; }
+	const double get_cx() const { return intrinsic_params[2]; }
+	const double get_cy() const { return intrinsic_params[3]; }
 
-	const double get_yaw() const { return external_parm[0]; }
-	const double get_pitch() const { return external_parm[1]; }
-	const double get_roll() const { return external_parm[2]; }
-	const double get_tx() const { return external_parm[3]; }
-	const double get_ty() const { return external_parm[4]; }
-	const double get_tz() const { return external_parm[5]; }
+	const double get_yaw() const { return extrinsic_params[0]; }
+	const double get_pitch() const { return extrinsic_params[1]; }
+	const double get_roll() const { return extrinsic_params[2]; }
+	const double get_tx() const { return extrinsic_params[3]; }
+	const double get_ty() const { return extrinsic_params[4]; }
+	const double get_tz() const { return extrinsic_params[5]; }
 
-	void set_yaw(double yaw) { external_parm[0] = yaw; }
-	void set_pitch(double pitch) { external_parm[1] = pitch; }
-	void set_roll(double roll) { external_parm[2] = roll; }
+	void set_yaw(double yaw) { extrinsic_params[0] = yaw; }
+	void set_pitch(double pitch) { extrinsic_params[1] = pitch; }
+	void set_roll(double roll) { extrinsic_params[2] = roll; }
 	void set_rotation(double yaw, double pitch, double roll) {
 		set_yaw(yaw); set_pitch(pitch); set_roll(roll);
 	}
@@ -86,9 +86,9 @@ public:
 		R(2, 0) = R_.at<double>(2, 0); R(2, 1) = R_.at<double>(2, 1); R(2, 2) = R_.at<double>(2, 2);
 	}
 
-	void set_tx(double tx) { external_parm[3] = tx; }
-	void set_ty(double ty) { external_parm[4] = ty; }
-	void set_tz(double tz) { external_parm[5] = tz; }
+	void set_tx(double tx) { extrinsic_params[3] = tx; }
+	void set_ty(double ty) { extrinsic_params[4] = ty; }
+	void set_tz(double tz) { extrinsic_params[5] = tz; }
 
 	const dlib::matrix<double> &get_current_shape() const { return current_shape; }
 	const dlib::matrix<double> &get_current_tex() const { return current_tex; }
@@ -101,8 +101,8 @@ public:
 	void print_fp_shape_mu() const { bfm_out << "landmark - shape average:\n"  << fp_shape_mu; }
 	void print_fp_shape_pc() const { bfm_out << "landmark - shape pc:\n"	   << fp_shape_pc; }
 	void print_shape_ev() const { bfm_out << "shape variance:\n " << shape_ev; }
-	void print_external_parm() const;
-	void print_intrinsic_parm() const;
+	void print_extrinsic_params() const;
+	void print_intrinsic_params() const;
 	void print_shape_coef() const { 
 		bfm_out << "shape coef:\n";
 		for(int i=0; i<n_id_pc; i++) bfm_out << shape_coef[i] << "\n";
@@ -115,8 +115,8 @@ public:
 	inline void print_T() const { bfm_out << "T: \n" << T; }
 
 private:
-	bool read_parm_from_file(const std::string &filename);
-	void init_parm();
+	bool read_params_from_file(const std::string &filename);
+	void init_params();
 	bool load_data();
 	void extract_landmark();
 	template<typename T>
@@ -164,8 +164,8 @@ private:
     /* roll:  rotate around x axis */
 	dlib::matrix<double, 3, 3> R;
 	dlib::matrix<double, 3, 1> T;
-	double external_parm[6] = { 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };	/* yaw pitch roll tx ty tz */
-	double intrinsic_parm[4] = { 0.f };	/* fx fy cx cy */
+	double extrinsic_params[6] = { 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };	/* yaw pitch roll tx ty tz */
+	double intrinsic_params[4] = { 0.f };	/* fx fy cx cy */
 
 	double *shape_coef;
 	dlib::matrix<double> shape_mu;

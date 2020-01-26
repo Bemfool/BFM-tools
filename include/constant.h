@@ -8,13 +8,6 @@
 	#define bfm_out std::cout
 #endif
 
-/* just for my database */
-#define N_LANDMARK 68
-#define N_ID_PC    99
-#define N_EXPR_PC  29
-#define N_EXT_PARM 6
-#define N_INT_PARM 4
-
 /* record my intrinsic parameters */
 // 1744.327628674942 1747.838275588676 800 600
 
