@@ -66,8 +66,8 @@ dlib::matrix<_Tp> euler2matrix(const _Tp &yaw, const _Tp &pitch, const _Tp &roll
 
 
 /* 
- * Function: ternary2quaternion
- * Usage: dlib::matrix<T> quaternion_points = ternary2quaternion(ternary_points);
+ * Function: points2homogeneous
+ * Usage: dlib::matrix<T> quaternion_points = points2homogeneous(ternary_points);
  * Parameters:
  * 		@ternary_points: Point matrix whose size is (n_vertice, 3).
  * Return:
@@ -81,7 +81,7 @@ dlib::matrix<_Tp> euler2matrix(const _Tp &yaw, const _Tp &pitch, const _Tp &roll
  */
 
 template<typename _Tp> inline
-dlib::matrix<_Tp> ternary2quaternion(const dlib::matrix<_Tp> &ternary_points)
+dlib::matrix<_Tp> points2homogeneous(const dlib::matrix<_Tp> &ternary_points)
 {
 	dlib::matrix<_Tp> quaternion_points;
 	quaternion_points.set_size(ternary_points.nr(), 4);
@@ -126,7 +126,7 @@ dlib::matrix<_Tp> transform_points(const dlib::matrix<_Tp, 3, 3> &R, const dlib:
 	P = RT2P(R, T);
 	// std::cout << "P: " << P << std::endl;
 	tmp_points = dlib::reshape(dlib::matrix_cast<_Tp>(points), points.nr()/3, 3);
-	before_points = ternary2quaternion(tmp_points);
+	before_points = points2homogeneous(tmp_points);
 	// std::cout << "quar: " << before_points(0, 0) << " " << before_points(1, 0) << " " << before_points(2, 0) << " " << before_points(3, 0) << std::endl;
 	after_points = P * before_points;
     return dlib::reshape(dlib::trans(after_points), points.nr(), 1);
