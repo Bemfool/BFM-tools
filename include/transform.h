@@ -6,6 +6,28 @@
 #include <opencv2/opencv.hpp> 
 
 
+template <size_t _Rz, size_t _Cz> inline
+void double_matrix2cvMat(const dlib::matrix<double, _Rz, _Cz> &src, CvMat *dst) 
+{
+	cvZero(dst);
+	for(int i=0; i<_Rz; i++)
+	{
+		for(int j=0; j<_Cz; j++) 
+		{
+			cvmSet(dst, i, j, src(i, j));
+		}
+	}		
+}
+
+template <size_t _Rz, size_t _Cz> inline
+void double_cvMat2matrix(CvMat *src, dlib::matrix<double, _Rz, _Cz> &dst) 
+{
+	for(int i=0; i<_Rz; i++)
+		for(int j=0; j<_Cz; j++)
+			dst(i, j) = cvmGet(src, i, j);
+}
+
+
 /* 
  * Function: euler2matrix
  * Usage: dlib::matrix<T> R = euler2matrix(yaw, pitch, roll, false);
@@ -178,11 +200,57 @@ void transform(const double ext_parm[6], T &x, T &y, T &z) {
 	z = (-s2     ) * X + (s3 * c2               ) * Y + (c3 * c2               ) * Z + tz; 
 }
 
+inline double mat_norm(dlib::matrix<double> &m)
+{
+	return dlib::sum(dlib::abs(m)) / (m.nr() * m.nc());
+}
 
-bool is_rotation_matrix(const dlib::matrix<double, 3, 3> &R);
+
+inline bool is_rotation_matrix(const dlib::matrix<double, 3, 3> &R)
+{
+    dlib::matrix<double> RRt = R * dlib::trans(R);
+    dlib::matrix<double> I = dlib::identity_matrix<double>(3);
+    dlib::matrix<double> dif = RRt - I;
+    return (mat_norm(dif) < 1e-6);
+}
 
 
-void satisfy_rotation_constraint(dlib::matrix<double, 3, 3> &R);
+inline void satisfy_extrinsic_matrix(dlib::matrix<double, 3, 3> &R, dlib::matrix<double, 3, 1> &T)
+{
+	CvMat *P_mat, *R_mat, *T_mat;
+	dlib::matrix<double> P = RT2P(R, T);
 
+	P_mat = cvCreateMat(3, 4, CV_64F);
+	double_matrix2cvMat<3 ,4>(P, P_mat);
 
-double mat_norm(dlib::matrix<double> &m);
+	std::cout << cv::Mat(P_mat->rows, P_mat->cols, CV_64F, P_mat->data.ptr) << std::endl;
+	R_mat = cvCreateMat(3, 3, CV_64F);
+	cvGetCols(P_mat, R_mat, 0, 3);
+	T_mat = cvCreateMat(3, 1, CV_64F);
+	cvGetCol(P_mat, T_mat, 3);
+
+	std::cout << "???" << std::endl;
+	if( cvDet(R_mat) < 0)
+		cvScale(P_mat, P_mat, -1);
+	double sc = cvNorm(R_mat);
+	CV_Assert(fabs(sc) > DBL_EPSILON);
+
+    double U[9], V[9], W[3];
+    CvMat matU = cvMat(3, 3, CV_64F, U);
+    CvMat matV = cvMat(3, 3, CV_64F, V);
+    CvMat matW = cvMat(3, 1, CV_64F, W);
+	std::cout << "???" << std::endl;
+
+	cvSVD(R_mat, &matW, &matU, &matV, CV_SVD_MODIFY_A + CV_SVD_U_T + CV_SVD_V_T);
+	cvGEMM(&matU, &matV, 1, 0, 0, R_mat, CV_GEMM_A_T);
+
+	cvScale(T_mat, T_mat, cvNorm(R_mat)/sc);
+	std::cout << "???" << std::endl;	
+	std::cout << cv::Mat(R_mat->rows, R_mat->cols, CV_64F, R_mat->data.db) << std::endl;
+	std::cout << cv::Mat(T_mat->rows, T_mat->cols, CV_64F, T_mat->data.db) << std::endl;
+	std::cout << "???" << std::endl;
+	double_cvMat2matrix<3, 3>(R_mat, R);
+	double_cvMat2matrix<3, 1>(T_mat, T);
+	std::cout << "???" << std::endl;
+}
+

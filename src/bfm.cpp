@@ -271,7 +271,7 @@ void bfm::generate_external_parameter()
 	bfm_out << "generate external paramter - ";
 	if(!is_rotation_matrix(R))
 	{
-		satisfy_rotation_constraint(R);
+		satisfy_extrinsic_matrix(R, T);
 	}
 	double sy = sqrt(R(0,0) * R(0,0) +  R(1,0) * R(1,0));
     bool singular = sy < 1e-6;
