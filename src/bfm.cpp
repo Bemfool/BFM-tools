@@ -431,6 +431,14 @@ void bfm::ply_write_fp(std::string fn) const {
 }
 
 
-dlib::matrix<double> bfm::get_fp_current_blendshape_transformed() const {
+dlib::matrix<double> bfm::get_fp_current_blendshape_transformed() const 
+{
 	return transform_points(R, T, fp_current_blendshape);
+}
+
+
+void bfm::clear_ext_params()
+{
+	fill(extrinsic_params, extrinsic_params + 6, 0.0);
+	generate_transform_matrix();	
 }

@@ -140,6 +140,8 @@ public:
 	inline void print_R() const { bfm_out << "R: \n" << R; }
 	inline void print_T() const { bfm_out << "T: \n" << T; }
 
+	void clear_ext_params();
+
 private:
 	bool read_params_from_file(const std::string &filename);
 	void init_params();
