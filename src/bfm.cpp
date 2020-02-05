@@ -268,10 +268,12 @@ void bfm::generate_transform_matrix()
 
 void bfm::generate_external_parameter()
 {
-	bfm_out << "generate external paramter - ";
+	bfm_out << "generate external paramter:\n";
 	if(!is_rotation_matrix(R))
 	{
+		bfm_out << "	detect current matrix does not satisfy constraints - ";
 		satisfy_extrinsic_matrix(R, T);
+		bfm_out << "solve\n";
 	}
 	double sy = sqrt(R(0,0) * R(0,0) +  R(1,0) * R(1,0));
     bool singular = sy < 1e-6;
@@ -291,7 +293,6 @@ void bfm::generate_external_parameter()
 	extrinsic_params[3] = T(0, 0);
 	extrinsic_params[4] = T(1, 0);
 	extrinsic_params[5] = T(2, 0);
-	bfm_out << "success\n";
 }
 
 
@@ -312,7 +313,7 @@ void bfm::accumulate_extrinsic_params(double *x) {
 
 	/* accumulate rotation */
 	dR = euler2matrix(dyaw, dpitch, droll, true);
-	R = R * dR;
+	R = dR * R;
 
 	/* accumulate translation */
 	dT = dtx, dty, dtz;

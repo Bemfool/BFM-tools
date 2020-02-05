@@ -17,7 +17,7 @@ else()
 endif()
 
 include_directories(./include)
-add_library(bfm SHARED src/bfm.cpp src/transform.cpp src/random.cpp)
+add_library(bfm SHARED src/bfm.cpp src/random.cpp)
 target_link_libraries(bfm dlib::dlib m  ${OpenCV_LIBS} ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES})
 
 add_executable(bfm-ex bfm-ex.cpp)

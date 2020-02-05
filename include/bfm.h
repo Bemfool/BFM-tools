@@ -16,21 +16,24 @@ public:
 	void generate_face();
 	void generate_fp_face();
 	template<typename T>
-	dlib::matrix<T> generate_fp_face(const T * const shape_coef_,const T * const expr_coef_) const {
+	dlib::matrix<T> generate_fp_face(const T * const shape_coef_,const T * const expr_coef_) const 
+	{
 		dlib::matrix<T> fp_current_shape_ = coef2object(shape_coef_, fp_shape_mu, fp_shape_pc, shape_ev, n_id_pc);
 		dlib::matrix<T> fp_current_expr_ = coef2object(expr_coef_, fp_expr_mu, fp_expr_pc, expr_ev, n_expr_pc);
 		dlib::matrix<T> fp_current_blendshape_ = fp_current_shape_ + fp_current_expr_;	
 		return fp_current_blendshape_;
 	}
 	template<typename T>
-	dlib::matrix<T> generate_fp_face_by_shape(const T * const shape_coef_) const {
+	dlib::matrix<T> generate_fp_face_by_shape(const T * const shape_coef_) const 
+	{
 		dlib::matrix<T> fp_current_shape_ = coef2object(shape_coef_, fp_shape_mu, fp_shape_pc, shape_ev, n_id_pc);
 		dlib::matrix<T> fp_current_expr_ = dlib::matrix_cast<T>(fp_current_expr);
 		dlib::matrix<T> fp_current_blendshape_ = fp_current_shape_ + fp_current_expr_;	
 		return fp_current_blendshape_;		
 	}
 	template<typename T>
-	dlib::matrix<T> generate_fp_face_by_expr(const T * const expr_coef_) const {
+	dlib::matrix<T> generate_fp_face_by_expr(const T * const expr_coef_) const 
+	{
 		dlib::matrix<T> fp_current_shape_ = dlib::matrix_cast<T>(fp_current_shape);
 		dlib::matrix<T> fp_current_expr_ = coef2object(expr_coef_, fp_expr_mu, fp_expr_pc, expr_ev, n_expr_pc);
 		dlib::matrix<T> fp_current_blendshape_ = fp_current_shape_ + fp_current_expr_;	
@@ -76,14 +79,35 @@ public:
 	void set_yaw(double yaw) { extrinsic_params[0] = yaw; }
 	void set_pitch(double pitch) { extrinsic_params[1] = pitch; }
 	void set_roll(double roll) { extrinsic_params[2] = roll; }
-	void set_rotation(double yaw, double pitch, double roll) {
+	void set_rotation(double yaw, double pitch, double roll) 
+	{
 		set_yaw(yaw); set_pitch(pitch); set_roll(roll);
 	}
-	void set_R(dlib::matrix<double> R_) { R = R_; }
-	void set_R(cv::Mat R_) { 
+	void set_R(const dlib::matrix<double> &R_) { R = R_; }
+	void set_R(const cv::Mat &R_) 
+	{ 
 		R(0, 0) = R_.at<double>(0, 0); R(0, 1) = R_.at<double>(0, 1); R(0, 2) = R_.at<double>(0, 2);
 		R(1, 0) = R_.at<double>(1, 0); R(1, 1) = R_.at<double>(1, 1); R(1, 2) = R_.at<double>(1, 2);
 		R(2, 0) = R_.at<double>(2, 0); R(2, 1) = R_.at<double>(2, 1); R(2, 2) = R_.at<double>(2, 2);
+	}
+	void set_R(CvMat *R_)
+	{
+		R(0, 0) = cvmGet(R_, 0, 0); R(0, 1) = cvmGet(R_, 0, 1); R(0, 2) = cvmGet(R_, 0, 2);
+		R(1, 0) = cvmGet(R_, 1, 0); R(1, 1) = cvmGet(R_, 1, 1); R(1, 2) = cvmGet(R_, 1, 2);
+		R(2, 0) = cvmGet(R_, 2, 0); R(2, 1) = cvmGet(R_, 2, 1); R(2, 2) = cvmGet(R_, 2, 2);		
+	}
+	void set_T(const dlib::matrix<double> &_T) { T = _T; }
+	void set_T(const cv::Mat &_T)
+	{
+		T(0, 0) = _T.at<double>(0, 0);
+		T(1, 0) = _T.at<double>(1, 0);
+		T(2, 0) = _T.at<double>(2, 0);
+ 	}
+	void set_T(CvMat *T_)
+	{
+		T(0, 0) = cvmGet(T_, 0, 0);
+		T(1, 0) = cvmGet(T_, 1, 0);
+		T(2, 0) = cvmGet(T_, 2, 0);		
 	}
 
 	void set_tx(double tx) { extrinsic_params[3] = tx; }
@@ -103,11 +127,13 @@ public:
 	void print_shape_ev() const { bfm_out << "shape variance:\n " << shape_ev; }
 	void print_extrinsic_params() const;
 	void print_intrinsic_params() const;
-	void print_shape_coef() const { 
+	void print_shape_coef() const 
+	{ 
 		bfm_out << "shape coef:\n";
 		for(int i=0; i<n_id_pc; i++) bfm_out << shape_coef[i] << "\n";
 	}
-	void print_expr_coef() const { 
+	void print_expr_coef() const 
+	{ 
 		bfm_out << "expression coef:\n";
 		for(int i=0; i<n_expr_pc; i++) bfm_out << expr_coef[i] << "\n";
 	}
@@ -121,7 +147,8 @@ private:
 	void extract_landmark();
 	template<typename T>
 	dlib::matrix<T> coef2object(const T *const &coef, const dlib::matrix<double> &mu,
-							    const dlib::matrix<double> &pc, const dlib::matrix<double> &ev, int len) const { 
+							    const dlib::matrix<double> &pc, const dlib::matrix<double> &ev, int len) const 
+	{ 
 		dlib::matrix<T> coef_(len, 1);
 		for(int i=0; i<len; i++)
 			coef_(i) = coef[i];
