@@ -18,6 +18,7 @@ void bfm::init(const std::string filename) {
 
 
 void bfm::data_check() const {
+	#ifndef BFM_SHUT_UP
 	bfm_out << "check data\n";
 	bfm_out << "	(1) shape mu: \n";
 	bfm_out << "		Yours:   " << shape_mu(0, 0) << "\n";
@@ -49,13 +50,16 @@ void bfm::data_check() const {
 	bfm_out << "	(10) triangle list: \n";
 	bfm_out << "		Yours:   " << tl(0) << " " << tl(1) << "\n";
 	bfm_out << "		Correct: -0.0028\n\n";
+	#endif
 }
 
 
 bool bfm::read_params_from_file(const std::string &filename) {
 	ifstream in(filename, std::ios::in);
 	if (!in) {
+		#ifndef BFM_SHUT_UP
 		bfm_out << "[ERROR] Can't open " << filename.c_str() << ".\n";
+		#endif
 		return false;
 	}
 	in >> bfm_h5_path;
@@ -141,7 +145,9 @@ bool bfm::load_data() {
 
 	ifstream in(landmark_idx_path, std::ios::in);
 	if (!in) {
+		#ifndef BFM_SHUT_UP
 		bfm_out << "[ERROR] Can't open " << landmark_idx_path.c_str() << ".\n";
+		#endif
 		return false;
 	}
 	for (int i = 0; i < n_landmark; i++) {
@@ -175,6 +181,7 @@ void bfm::extract_landmark() {
 	}
 }
 
+#ifndef BFM_SHUT_UP
 void bfm::print_extrinsic_params() const {
 	bfm_out << "yaw: "   << extrinsic_params[0] << " ";
 	bfm_out << "(" << (extrinsic_params[0] * 180.0 / M_PI) << "\")\n";
@@ -194,73 +201,100 @@ void bfm::print_intrinsic_params() const {
 	bfm_out << "cx: " << intrinsic_params[2] << "\n";
 	bfm_out << "cy: " << intrinsic_params[3] << "\n";
 }
+#endif
 
 
 void bfm::generate_random_face(double scale) {
+	#ifndef BFM_SHUT_UP
 	bfm_out << "init random numbers (using the same scale) - ";
+	#endif
 	shape_coef = randn(n_id_pc, scale);
 	tex_coef   = randn(n_id_pc, scale);
 	expr_coef  = randn(n_expr_pc, scale);
+	#ifndef BFM_SHUT_UP
 	bfm_out << "success\n";
+	#endif
 	generate_face();
 }
 
 
 void bfm::generate_random_face(double shape_scale, double tex_scale, double expr_scale) {
+	#ifndef BFM_SHUT_UP
 	bfm_out << "init random numbers (using different scales) - ";
+	#endif
 	shape_coef = randn(n_id_pc, shape_scale);
 	tex_coef   = randn(n_id_pc, tex_scale);
 	expr_coef  = randn(n_expr_pc, expr_scale);
+	#ifndef BFM_SHUT_UP
 	bfm_out << "success\n";
+	#endif
 	generate_face();
 }
 
 
 void bfm::generate_face() {
+	#ifndef BFM_SHUT_UP
 	bfm_out << "generate face - ";
+	#endif
 	current_shape = coef2object(shape_coef, shape_mu, shape_pc, shape_ev, n_id_pc);
 	current_tex   = coef2object(tex_coef, tex_mu, tex_pc, tex_ev, n_id_pc);
 	current_expr  = coef2object(expr_coef, expr_mu, expr_pc, expr_ev, n_expr_pc);
 	current_blendshape = current_shape + current_expr;
+	#ifndef BFM_SHUT_UP
 	bfm_out << "success\n";
+	#endif
 }
 
 
 void bfm::generate_fp_face() {
+	#ifndef BFM_SHUT_UP
 	bfm_out << "generate feature point face - ";
+	#endif
 	fp_current_shape = coef2object(shape_coef, fp_shape_mu, fp_shape_pc, shape_ev, n_id_pc);
 	fp_current_expr = coef2object(expr_coef, fp_expr_mu, fp_expr_pc, expr_ev, n_expr_pc);
 	fp_current_blendshape = fp_current_shape + fp_current_expr;
+	#ifndef BFM_SHUT_UP
 	bfm_out << "success\n";
+	#endif
 }
 
 
 void bfm::generate_rotation_matrix() 
 {
+	#ifndef BFM_SHUT_UP
 	bfm_out << "generate rotation matrix - ";
+	#endif
 	const double &yaw   = extrinsic_params[0];
 	const double &pitch = extrinsic_params[1];
 	const double &roll  = extrinsic_params[2];
 	R = euler2matrix(yaw, pitch, roll, false);
+	#ifndef BFM_SHUT_UP
 	bfm_out << "success\n";
 	print_R();
+	#endif
 }
 
 
 void bfm::generate_translation_vector()
 {
+	#ifndef BFM_SHUT_UP
 	bfm_out << "generate translation vector - ";	
+	#endif
 	const double &tx = extrinsic_params[3];
 	const double &ty = extrinsic_params[4];
 	const double &tz = extrinsic_params[5];
 	T = tx, ty, tz;	
+	#ifndef BFM_SHUT_UP
 	bfm_out << "success\n";
 	print_T();
+	#endif
 }
 
 void bfm::generate_transform_matrix()
 {
+	#ifndef BFM_SHUT_UP
 	bfm_out << "generate transform matrix (rotation + translation):\n";
+	#endif
 	generate_rotation_matrix();
 	generate_translation_vector();
 }
@@ -268,12 +302,18 @@ void bfm::generate_transform_matrix()
 
 void bfm::generate_external_parameter()
 {
+	#ifndef BFM_SHUT_UP
 	bfm_out << "generate external paramter:\n";
+	#endif
 	if(!is_rotation_matrix(R))
 	{
+		#ifndef BFM_SHUT_UP
 		bfm_out << "	detect current matrix does not satisfy constraints - ";
+		#endif
 		satisfy_extrinsic_matrix(R, T);
+		#ifndef BFM_SHUT_UP
 		bfm_out << "solve\n";
+		#endif
 	}
 	double sy = sqrt(R(0,0) * R(0,0) +  R(1,0) * R(1,0));
     bool singular = sy < 1e-6;
@@ -326,7 +366,9 @@ void bfm::ply_write(std::string fn, long mode) const {
 	/* Note: In Linux Cpp, we should use std::ios::bfm_out as flag, which is not necessary in Windows */
 	out.open(fn, std::ios::out | std::ios::binary);
 	if (!out) {
+		#ifndef BFM_SHUT_UP
 		bfm_out << "Creation of " << fn.c_str() << " failed.\n";
+		#endif
 		return;
 	}
 	out << "ply\n";
@@ -381,8 +423,10 @@ void bfm::ply_write(std::string fn, long mode) const {
 		out.write((char *)&b, sizeof(b));
 	}
 	if ((mode & PICK_FP) && cnt != n_landmark) {
+		#ifndef BFM_SHUT_UP
 		bfm_out << "[ERROR] Pick too less landmarks.\n";
 		bfm_out << "Number of picked points is " << cnt << ".\n";
+		#endif
 	}
 
 	unsigned char N_VER_PER_FACE = 3;
@@ -404,7 +448,9 @@ void bfm::ply_write_fp(std::string fn) const {
 	/* Note: In Linux Cpp, we should use std::ios::bfm_out as flag, which is not necessary in Windows */
 	out.open(fn, std::ios::out | std::ios::binary);
 	if (!out) {
+		#ifndef BFM_SHUT_UP
 		bfm_out << "Creation of " << fn.c_str() << " failed.\n";
+		#endif
 		return;
 	}
 	out << "ply\n";

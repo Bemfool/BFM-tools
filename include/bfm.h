@@ -122,6 +122,7 @@ public:
 	dlib::matrix<double> get_fp_current_blendshape_transformed() const;
 	const dlib::matrix<double> &get_tl() const { return tl; }
 
+#ifndef BFM_SHUT_UP
 	void print_fp_shape_mu() const { bfm_out << "landmark - shape average:\n"  << fp_shape_mu; }
 	void print_fp_shape_pc() const { bfm_out << "landmark - shape pc:\n"	   << fp_shape_pc; }
 	void print_shape_ev() const { bfm_out << "shape variance:\n " << shape_ev; }
@@ -139,6 +140,7 @@ public:
 	}
 	inline void print_R() const { bfm_out << "R: \n" << R; }
 	inline void print_T() const { bfm_out << "T: \n" << T; }
+#endif
 
 	void clear_ext_params();
 
