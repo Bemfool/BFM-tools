@@ -143,6 +143,22 @@ public:
 #endif
 
 	void clear_ext_params();
+	void write_ext_params_to_file(std::ofstream &f) const
+	{
+		f << extrinsic_params[0] << " ";
+		f << extrinsic_params[1] << " ";
+		f << extrinsic_params[2] << " ";
+		f << extrinsic_params[3] << " ";
+		f << extrinsic_params[4] << " ";
+		f << extrinsic_params[5] << "\n";
+	}
+	void write_fp_to_file(std::ofstream &f) const 
+	{
+		for(int i=0; i<n_landmark; i++)
+			f << fp_current_blendshape(i*3) << " " 
+			  << fp_current_blendshape(i*3+1) << " "
+			  << fp_current_blendshape(i*3+2);
+	}
 
 private:
 	bool read_params_from_file(const std::string &filename);
