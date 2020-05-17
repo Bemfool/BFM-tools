@@ -72,6 +72,8 @@ void double_cvMat2matrix(CvMat *src, dlib::matrix<double, _Rz, _Cz> &dst)
 template<typename _Tp> inline 
 dlib::matrix<_Tp> euler2matrix(const _Tp &yaw, const _Tp &pitch, const _Tp &roll, bool is_linearized = false)
 {
+	// Z1Y2X3
+
 	/* yaw - phi */	
 	/* pitch - theta */		
 	/* roll - psi */

@@ -76,12 +76,14 @@ public:
 	const double get_ty() const { return extrinsic_params[4]; }
 	const double get_tz() const { return extrinsic_params[5]; }
 
-	void set_yaw(double yaw) { extrinsic_params[0] = yaw; }
-	void set_pitch(double pitch) { extrinsic_params[1] = pitch; }
-	void set_roll(double roll) { extrinsic_params[2] = roll; }
+	void set_yaw(double yaw) { extrinsic_params[0] = yaw; generate_rotation_matrix();}
+	void set_pitch(double pitch) { extrinsic_params[1] = pitch; generate_rotation_matrix();}
+	void set_roll(double roll) { extrinsic_params[2] = roll; generate_rotation_matrix();}
 	void set_rotation(double yaw, double pitch, double roll) 
 	{
-		set_yaw(yaw); set_pitch(pitch); set_roll(roll);
+		set_yaw(yaw); 
+		set_pitch(pitch); 
+		set_roll(roll);
 	}
 	void set_R(const dlib::matrix<double> &R_) { R = R_; }
 	void set_R(const cv::Mat &R_) 
@@ -140,6 +142,16 @@ public:
 	}
 	inline void print_R() const { bfm_out << "R: \n" << R; }
 	inline void print_T() const { bfm_out << "T: \n" << T; }
+#else
+	void print_fp_shape_mu() const {}
+	void print_fp_shape_pc() const {}
+	void print_shape_ev() const {}
+	void print_extrinsic_params() const {}
+	void print_intrinsic_params() const {}
+	void print_shape_coef() const {}
+	void print_expr_coef() const {}
+	inline void print_R() const {}
+	inline void print_T() const {}
 #endif
 
 	void clear_ext_params();
@@ -152,12 +164,45 @@ public:
 		f << extrinsic_params[4] << " ";
 		f << extrinsic_params[5] << "\n";
 	}
+	
 	void write_fp_to_file(std::ofstream &f) const 
 	{
 		for(int i=0; i<n_landmark; i++)
 			f << fp_current_blendshape(i*3) << " " 
 			  << fp_current_blendshape(i*3+1) << " "
 			  << fp_current_blendshape(i*3+2);
+	}
+
+	void write_hard_code()
+	{
+		std::ofstream f;
+		f.open("FaceData.txt", std::ios::out);
+		for(int i=0; i<68*3; i++)
+			f << fp_shape_mu(i) << " ";
+		f << "\n";
+		for(int i=0; i<99; i++)
+			f << shape_ev(i) << " ";
+		f << "\n";
+		for(int i=0; i<68*3; i++)
+		{
+			for(int j=0; j<99; j++)
+				f << fp_shape_pc(i, j) << " ";
+			f << "\n";
+		}
+		
+		for(int i=0; i<68*3; i++)
+			f << fp_expr_mu(i) << " ";
+		f << "\n";
+		for(int i=0; i<29; i++)
+			f << expr_ev(i) << " ";
+		f << "\n";
+		for(int i=0; i<68*3; i++)
+		{
+			for(int j=0; j<29; j++)
+				f << fp_expr_pc(i, j) << " ";
+			f << "\n";
+		}
+		f.close();
 	}
 
 private:

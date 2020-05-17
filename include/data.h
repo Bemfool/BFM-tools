@@ -24,7 +24,9 @@ using namespace std;
 			model_type##_data.read(model_type##_raw, data_type); \
 			model_type##_data.close(); \
 			raw2matrix(model_type, model_type##_raw); \
-			delete[] model_type##_raw; \
+			if(model_type##_raw){ \
+				delete [] model_type##_raw; \
+			} \
 		} 
 
 

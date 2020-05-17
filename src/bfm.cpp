@@ -140,9 +140,7 @@ bool bfm::load_data() {
 
 	load_hdf5_model(tl, tl_h5_path, PredType::NATIVE_UINT32);
 	file.close();
-
 	shape_mu = shape_mu * 1000.0;
-
 	ifstream in(landmark_idx_path, std::ios::in);
 	if (!in) {
 		#ifndef BFM_SHUT_UP
@@ -150,11 +148,15 @@ bool bfm::load_data() {
 		#endif
 		return false;
 	}
+
+	std::cout << "done" << std::endl;
+
 	for (int i = 0; i < n_landmark; i++) {
 		int tmp_idx;
 		in >> tmp_idx;
 		landmark_idx[i] = tmp_idx - 1;
 	}
+	
 	return true;
 }
 
