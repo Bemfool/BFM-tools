@@ -118,11 +118,19 @@ public:
 
 	const dlib::matrix<double> &get_current_shape() const { return current_shape; }
 	const dlib::matrix<double> &get_current_tex() const { return current_tex; }
+	dlib::matrix<double> get_std_tex() const {
+		dlib::matrix<double> res;
+		res.set_size(n_vertice * 3, 1);
+		for(auto i = 0; i < res.size(); i++)
+			res(i) = tex_mu(i) / 255.0;
+		return res;
+	} 
 	const dlib::matrix<double> &get_current_expr() const { return current_expr; }
 	const dlib::matrix<double> &get_current_blendshape() const { return current_blendshape; }
 	const dlib::matrix<double> &get_fp_current_blendshape() const { return fp_current_blendshape; }
 	dlib::matrix<double> get_fp_current_blendshape_transformed() const;
-	const dlib::matrix<double> &get_tl() const { return tl; }
+	dlib::matrix<double> get_current_blendshape_transformed() const;
+	const dlib::matrix<double> &get_tl() const 	{ return tl; }
 
 #ifndef BFM_SHUT_UP
 	void print_fp_shape_mu() const { bfm_out << "landmark - shape average:\n"  << fp_shape_mu; }

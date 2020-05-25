@@ -485,8 +485,15 @@ dlib::matrix<double> bfm::get_fp_current_blendshape_transformed() const
 }
 
 
+dlib::matrix<double> bfm::get_current_blendshape_transformed() const 
+{
+	std::cout << T(0) << " " << T(1) << " " << T(2) << std::endl;
+	return transform_points(R, T, current_blendshape);
+}
+
+
 void bfm::clear_ext_params()
 {
 	fill(extrinsic_params, extrinsic_params + 6, 0.0);
-	generate_transform_matrix();	
+	generate_transform_matrix();
 }
