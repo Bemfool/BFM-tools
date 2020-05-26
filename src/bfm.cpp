@@ -105,6 +105,7 @@ void bfm::init_params() {
 
 	if (use_landmark) {
 		landmark_idx.resize(n_landmark);
+		landmark_map.resize(n_landmark);
 		fp_shape_mu.set_size(n_landmark * 3, 1);
 		fp_shape_pc.set_size(n_landmark * 3, n_id_pc);
 		fp_expr_mu.set_size(n_landmark * 3, 1);
@@ -141,6 +142,7 @@ bool bfm::load_data() {
 	load_hdf5_model(tl, tl_h5_path, PredType::NATIVE_UINT32);
 	file.close();
 	shape_mu = shape_mu * 1000.0;
+
 	ifstream in(landmark_idx_path, std::ios::in);
 	if (!in) {
 		#ifndef BFM_SHUT_UP
@@ -149,12 +151,11 @@ bool bfm::load_data() {
 		return false;
 	}
 
-	std::cout << "done" << std::endl;
-
 	for (int i = 0; i < n_landmark; i++) {
-		int tmp_idx;
-		in >> tmp_idx;
+		int tmp_idx, idx;
+		in >> tmp_idx >> idx;
 		landmark_idx[i] = tmp_idx - 1;
+		landmark_map[i] = idx - 1;
 	}
 	
 	return true;

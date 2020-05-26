@@ -181,37 +181,7 @@ public:
 			  << fp_current_blendshape(i*3+2);
 	}
 
-	void write_hard_code()
-	{
-		std::ofstream f;
-		f.open("FaceData.txt", std::ios::out);
-		for(int i=0; i<68*3; i++)
-			f << fp_shape_mu(i) << " ";
-		f << "\n";
-		for(int i=0; i<99; i++)
-			f << shape_ev(i) << " ";
-		f << "\n";
-		for(int i=0; i<68*3; i++)
-		{
-			for(int j=0; j<99; j++)
-				f << fp_shape_pc(i, j) << " ";
-			f << "\n";
-		}
-		
-		for(int i=0; i<68*3; i++)
-			f << fp_expr_mu(i) << " ";
-		f << "\n";
-		for(int i=0; i<29; i++)
-			f << expr_ev(i) << " ";
-		f << "\n";
-		for(int i=0; i<68*3; i++)
-		{
-			for(int j=0; j<29; j++)
-				f << fp_expr_pc(i, j) << " ";
-			f << "\n";
-		}
-		f.close();
-	}
+	int get_dlib_fp_idx(int idx) const { return landmark_map[idx]; }
 
 private:
 	bool read_params_from_file(const std::string &filename);
@@ -299,4 +269,5 @@ private:
 	dlib::matrix<double> fp_current_blendshape;
 
 	std::vector<int> landmark_idx;
+	std::vector<int> landmark_map;
 };
