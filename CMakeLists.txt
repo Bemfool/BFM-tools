@@ -1,13 +1,20 @@
-# Project name: bfm-tools
-# (BFM is short for Basel Face Model)
-project(bfm-tools)
+project(bfm_manager) # Project name: Base Face Model Manager
 cmake_minimum_required(VERSION 2.8.12)
+
 
 add_compile_options(-fPIC)
 
-add_subdirectory(/home/keith/dlib-19.17/dlib dlib_build)
+
+###############################################################################################
+######################################## Dedendency ###########################################
+###############################################################################################
+
+
+# Hdf5
 find_package(HDF5 REQUIRED C CXX)
 
+
+# OpenCV
 find_package(OpenCV QUIET)
 if(OpenCV_FOUND)
    message("OpenCV found.")
@@ -16,12 +23,20 @@ else()
    message("OpenCV not found, so we won't build the landmark-fitting-cam example.")
 endif()
 
-include_directories(./include)
-add_library(bfm SHARED src/bfm.cpp src/random.cpp)
-target_link_libraries(bfm dlib::dlib m  ${OpenCV_LIBS} ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES})
 
-OPTION(GEN_BFM_SAMPLES "Generate a sample." OFF)
-if(GEN_BFM_SAMPLES)
-   add_executable(bfm-ex bfm-ex.cpp)
-   target_link_libraries(bfm-ex bfm)
+# Bfm Manager
+include_directories(./include)
+add_library(bfm_manager SHARED src/bfm_manager.cpp)
+target_link_libraries(bfm_manager m ${OpenCV_LIBS} ${HDF5_LIBRARIES} ${HDF5_CXX_LIBRARIES})
+
+
+###############################################################################################
+######################################## Options ##############################################
+###############################################################################################
+
+
+OPTION(GEN_BFM_EXAMPLES "Generate usage examples of Basel Face Moldel manager." OFF)
+if(GEN_BFM_EXAMPLES)
+   add_executable(write_avg_face example/write_avg_face.cpp)
+   target_link_libraries(write_avg_face bfm_manager)
 endif()
