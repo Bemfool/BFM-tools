@@ -1,5 +1,4 @@
 #include <hdf5.h>
-#include <hdf5_hl.h>
 const char* info_ver = "INFO" ":" H5_VERSION;
 #ifdef H5_HAVE_PARALLEL
 const char* info_parallel = "INFO" ":" "PARALLEL";

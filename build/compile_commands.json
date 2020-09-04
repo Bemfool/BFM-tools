@@ -1,12 +1,12 @@
 [
 {
-  "directory": "/home/keith/head-pose-estimation-updating/lib/BFM-tools/build",
-  "command": "/usr/bin/x86_64-linux-gnu-g++-7  -Dbfm_manager_EXPORTS -isystem /usr/local/include -isystem /usr/local/include/opencv -I/home/keith/head-pose-estimation-updating/lib/BFM-tools/./include  -g -fPIC   -fPIC -o CMakeFiles/bfm_manager.dir/src/bfm_manager.cpp.o -c /home/keith/head-pose-estimation-updating/lib/BFM-tools/src/bfm_manager.cpp",
-  "file": "/home/keith/head-pose-estimation-updating/lib/BFM-tools/src/bfm_manager.cpp"
+  "directory": "/home/bemfoo/Project/BFM-tools/build",
+  "command": "/usr/bin/x86_64-linux-gnu-g++-5 -Dbfm_manager_EXPORTS -I/usr/include/eigen3 -I/usr/include/hdf5/serial -I/home/bemfoo/Project/BFM-tools/./include -isystem /usr/local/opencv3/include -isystem /usr/local/opencv3/include/opencv -g -fPIC -std=c++11 -fPIC -o CMakeFiles/bfm_manager.dir/src/bfm_manager.cpp.o -c /home/bemfoo/Project/BFM-tools/src/bfm_manager.cpp",
+  "file": "/home/bemfoo/Project/BFM-tools/src/bfm_manager.cpp"
 },
 {
-  "directory": "/home/keith/head-pose-estimation-updating/lib/BFM-tools/build",
-  "command": "/usr/bin/x86_64-linux-gnu-g++-7   -isystem /usr/local/include -isystem /usr/local/include/opencv -I/home/keith/head-pose-estimation-updating/lib/BFM-tools/./include  -g   -fPIC -o CMakeFiles/write_avg_face.dir/example/write_avg_face.cpp.o -c /home/keith/head-pose-estimation-updating/lib/BFM-tools/example/write_avg_face.cpp",
-  "file": "/home/keith/head-pose-estimation-updating/lib/BFM-tools/example/write_avg_face.cpp"
+  "directory": "/home/bemfoo/Project/BFM-tools/build",
+  "command": "/usr/bin/x86_64-linux-gnu-g++-5  -I/usr/include/eigen3 -I/usr/include/hdf5/serial -I/home/bemfoo/Project/BFM-tools/./include -isystem /usr/local/opencv3/include -isystem /usr/local/opencv3/include/opencv -g -std=c++11 -fPIC -o CMakeFiles/gen_faces.dir/example/ex_gen_faces.cpp.o -c /home/bemfoo/Project/BFM-tools/example/ex_gen_faces.cpp",
+  "file": "/home/bemfoo/Project/BFM-tools/example/ex_gen_faces.cpp"
 }
 ]

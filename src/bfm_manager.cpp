@@ -81,7 +81,6 @@ void CBaselFaceModelManager::Alloc() {
 
 	if (use_fp_) {
 		fp_idx_.resize(num_fp_);
-		fp_map_.resize(num_fp_);
 		fp_shape_mu_.resize(num_fp_ * 3);
 		fp_shape_pc_.resize(num_fp_ * 3, num_id_pc_);
 		fp_expr_mu_.resize(num_fp_ * 3);
@@ -132,9 +131,8 @@ bool CBaselFaceModelManager::Load() {
 		for (unsigned int i = 0; i < num_fp_; i++) 
 		{
 			int tmp_idx, idx;
-			in >> tmp_idx >> idx;
+			in >> tmp_idx;
 			fp_idx_[i] = tmp_idx - 1;
-			fp_map_[i] = idx - 1;
 		}
 	}
 	

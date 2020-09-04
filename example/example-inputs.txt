@@ -1,4 +1,4 @@
-../../../data/BaselFaceModel_mod.h5
+/home/bemfoo/Data/BaselFaceModel_mod.h5
 46990 93322 99 29
 1744.327628674942 1747.838275588676 800 600
 shapeMU shapeEV shapePC
@@ -6,4 +6,4 @@ texMU texEV texPC
 expMU expEV expPC
 faces
 68 
-../../../data/example_landmark_68.anl
+../data/example_landmark_68.anl

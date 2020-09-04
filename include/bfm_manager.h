@@ -142,9 +142,6 @@ public:
 	void ClrExtParams();
 
 
-	int get_dlib_fp_idx(int idx) const { return fp_map_[idx]; }
-
-
 /*************************************************************************************************************/
 /***************************************** Set & Get Function ************************************************/
 /*************************************************************************************************************/
@@ -406,7 +403,6 @@ private:
 	bool use_fp_;
 	unsigned int num_fp_;
 	std::vector<int> fp_idx_; 
-	std::vector<int> fp_map_;
 	VectorXd fp_shape_mu_;
 	MatrixXd fp_shape_pc_;
 	VectorXd fp_expr_mu_;

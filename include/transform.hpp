@@ -244,6 +244,16 @@ namespace bfm_utils {
 		CV_Assert(fabs(sc) > DBL_EPSILON);
 
 		double u[9], v[9], w[3];
-		// CvMat u_mat = cvMat(3, 3, CV_64F, 
+		CvMat u_mat = cvMat(3, 3, CV_64F, u);
+		CvMat v_mat = cvMat(3, 3, CV_64F, v);
+		CvMat w_mat = cvMat(3, 1, CV_64F, w);
+
+		cvSVD(cv_r_mat, &w_mat, &u_mat, &v_mat, CV_SVD_MODIFY_A + CV_SVD_U_T + CV_SVD_V_T);
+		cvGEMM(&u_mat, &v_mat, 1, 0, 0, cv_r_mat, CV_GEMM_A_T);
+
+		cvScale(cv_t_vec, cv_t_vec, cvNorm(cv_r_mat)/sc);
+
+		CvMat2EigenMat(cv_r_mat, r_mat);
+		CvMat2EigenMat(cv_t_vec, t_vec);
 	}
 }
