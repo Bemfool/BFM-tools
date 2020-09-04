@@ -1,4 +1,0 @@
-/home/bemfoo/Project/BFM-tools/build/CMakeFiles/rebuild_cache.dir
-/home/bemfoo/Project/BFM-tools/build/CMakeFiles/edit_cache.dir
-/home/bemfoo/Project/BFM-tools/build/CMakeFiles/bfm_manager.dir
-/home/bemfoo/Project/BFM-tools/build/CMakeFiles/gen_faces.dir
