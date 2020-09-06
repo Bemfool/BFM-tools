@@ -1,306 +1,329 @@
 ﻿#include "bfm_manager.h"
 
-CBaselFaceModelManager::CBaselFaceModelManager(
-	std::string bfm_h5_path,
-	unsigned int num_vertice,
-	unsigned int num_face,
-	unsigned int num_id_pc,
-	unsigned int num_expr_pc,
-	double *int_params, 
-	std::string shape_mu_h5_path,
-	std::string shape_ev_h5_path,
-	std::string shape_pc_h5_path,
-	std::string tex_mu_h5_path,
-	std::string tex_ev_h5_path,
-	std::string tex_pc_h5_path,
-	std::string expr_mu_h5_path,
-	std::string expr_ev_h5_path,
-	std::string expr_pc_h5_path,
-	std::string tl_h5_path,
-	unsigned int num_fp,
-	std::string fp_idx_path) :
-	bfm_h5_path_(bfm_h5_path),
-	num_vertice_(num_vertice),
-	num_face_(num_face),
-	num_id_pc_(num_id_pc),
-	num_expr_pc_(num_expr_pc),
-	num_fp_(num_fp),
-	fp_idx_path_(fp_idx_path),
-	shape_mu_h5_path_(shape_mu_h5_path),
-	shape_ev_h5_path_(shape_ev_h5_path),
-	shape_pc_h5_path_(shape_pc_h5_path),
-	tex_mu_h5_path_(tex_mu_h5_path),
-	tex_ev_h5_path_(tex_ev_h5_path),
-	tex_pc_h5_path_(tex_pc_h5_path),
-	expr_mu_h5_path_(expr_mu_h5_path),
-	expr_ev_h5_path_(expr_ev_h5_path),
-	expr_pc_h5_path_(expr_pc_h5_path),
-	tl_h5_path_(tl_h5_path) 
+BaselFaceModelManager::BaselFaceModelManager(
+	std::string strModelPath,
+	unsigned int nVertices,
+	unsigned int nFaces,
+	unsigned int nIdPcs,
+	unsigned int nExprPcs,
+	double *aIntParams, 
+	std::string strShapeMuH5Path,
+	std::string strShapeEvH5Path,
+	std::string strShapePcH5Path,
+	std::string strTexMuH5Path,
+	std::string strTexEvH5Path,
+	std::string strTexPcH5Path,
+	std::string strExprMuH5Path,
+	std::string strExprEvH5Path,
+	std::string strExprPcH5Path,
+	std::string strTriangleListH5Path,
+	unsigned int nLandmarks,
+	std::string strLandmarkIdxPath) :
+	m_strModelPath(strModelPath),
+	m_nVertices(nVertices),
+	m_nFaces(nFaces),
+	m_nIdPcs(nIdPcs),
+	m_nExprPcs(nExprPcs),
+	m_nLandmarks(nLandmarks),
+	m_strLandmarkIdxPath(strLandmarkIdxPath),
+	m_strShapeMuH5Path(strShapeMuH5Path),
+	m_strShapeEvH5Path(strShapeEvH5Path),
+	m_strShapePcH5Path(strShapePcH5Path),
+	m_strTexMuH5Path(strTexMuH5Path),
+	m_strTexEvH5Path(strTexEvH5Path),
+	m_strTexPcH5Path(strTexPcH5Path),
+	m_strExprMuH5Path(strExprMuH5Path),
+	m_strExprEvH5Path(strExprEvH5Path),
+	m_strExprPcH5Path(strExprPcH5Path),
+	m_strTriangleListH5Path(strTriangleListH5Path) 
 {
-	for(unsigned int i = 0; i < 4; i++)
-		int_params_[i] = int_params[i];
-	if(!num_fp)
-		use_fp_ = false;
+	for(unsigned int iParam = 0; iParam < 4; iParam++)
+		m_aIntParams[iParam] = aIntParams[iParam];
+	if(!nLandmarks)
+		m_bUseLandmark = false;
 
-	Alloc();
-	Load();
-	if(use_fp_)
+	this->alloc();
+	this->load();
+	if(m_bUseLandmark)
 	{
-		ExtractFp();
-		GenFpFace();
+		this->extractLandmarks();
+		this->genFpFace();
 	}
-	GenAvgFace();
+	this->genAvgFace();
 }
 
 
-void CBaselFaceModelManager::Alloc() {
-	shape_coef_ = new double[num_id_pc_];
-	fill(shape_coef_, shape_coef_ + num_id_pc_, 0.f);
-	shape_mu_.resize(num_vertice_ * 3);
-	shape_ev_.resize(num_id_pc_);
-	shape_pc_.resize(num_vertice_ * 3, num_id_pc_);
+void BaselFaceModelManager::alloc() {
+	m_aShapeCoef = new double[m_nIdPcs];
+	std::fill(m_aShapeCoef, m_aShapeCoef + m_nIdPcs, 0.0);
+	m_vecShapeMu.resize(m_nVertices * 3);
+	m_vecShapeEv.resize(m_nIdPcs);
+	m_matShapePc.resize(m_nVertices * 3, m_nIdPcs);
 
-	tex_coef_ = new double[num_id_pc_];
-	fill(tex_coef_, tex_coef_ + num_id_pc_, 0.f);
-	tex_mu_.resize(num_vertice_ * 3);
-	tex_ev_.resize(num_id_pc_);
-	tex_pc_.resize(num_vertice_ * 3, num_id_pc_);
+	m_aTexCoef = new double[m_nIdPcs];
+	std::fill(m_aTexCoef, m_aTexCoef + m_nIdPcs, 0.0);
+	m_vecTexMu.resize(m_nVertices * 3);
+	m_vecTexEv.resize(m_nIdPcs);
+	m_matTexPc.resize(m_nVertices * 3, m_nIdPcs);
 
-	expr_coef_ = new double[num_expr_pc_];
-	fill(expr_coef_, expr_coef_ + num_expr_pc_, 0.f);
-	expr_mu_.resize(num_vertice_ * 3);
-	expr_ev_.resize(num_expr_pc_);
-	expr_pc_.resize(num_vertice_ * 3, num_expr_pc_);
+	m_aExprCoef = new double[m_nExprPcs];
+	std::fill(m_aExprCoef, m_aExprCoef + m_nExprPcs, 0.0);
+	m_vecExprMu.resize(m_nVertices * 3);
+	m_vecExprEv.resize(m_nExprPcs);
+	m_matExprPc.resize(m_nVertices * 3, m_nExprPcs);
 
-	tl_.resize(num_face_ * 3);
+	m_vecTriangleList.resize(m_nFaces * 3);
 
-	current_shape_.resize(num_vertice_ * 3);
-	current_tex_.resize(num_vertice_ * 3);
-	current_expr_.resize(num_vertice_ * 3);
-	current_blendshape_.resize(num_vertice_ * 3);
+	m_vecCurrentShape.resize(m_nVertices * 3);
+	m_vecCurrentTex.resize(m_nVertices * 3);
+	m_vecCurrentExpr.resize(m_nVertices * 3);
+	m_vecCurrentBlendshape.resize(m_nVertices * 3);
 
-	if (use_fp_) {
-		fp_idx_.resize(num_fp_);
-		fp_shape_mu_.resize(num_fp_ * 3);
-		fp_shape_pc_.resize(num_fp_ * 3, num_id_pc_);
-		fp_expr_mu_.resize(num_fp_ * 3);
-		fp_expr_pc_.resize(num_fp_ * 3, num_expr_pc_);
+	if (m_bUseLandmark) {
+		m_vecLandmarkIndices.resize(m_nLandmarks);
+		m_vecLandmarkShapeMu.resize(m_nLandmarks * 3);
+		m_matLandmarkShapePc.resize(m_nLandmarks * 3, m_nIdPcs);
+		m_vecLandmarkExprMu.resize(m_nLandmarks * 3);
+		m_matLandmarkExprPc.resize(m_nLandmarks * 3, m_nExprPcs);
 	}
 }
 
 
-bool CBaselFaceModelManager::Load() {
-	float *shape_mu_raw = new float[num_vertice_ * 3];
-	float *shape_ev_raw = new float[num_id_pc_];
-	float *shape_pc_raw = new float[num_vertice_ * 3 * num_id_pc_];
-	float *tex_mu_raw = new float[num_vertice_ * 3];
-	float *tex_ev_raw = new float[num_id_pc_];
-	float *tex_pc_raw = new float[num_vertice_ * 3 * num_id_pc_];
-	float *expr_mu_raw = new float[num_vertice_ * 3];
-	float *expr_ev_raw = new float[num_expr_pc_];
-	float *expr_pc_raw = new float[num_vertice_ * 3 * num_expr_pc_];
-	unsigned int *tl_raw = new unsigned int[num_face_ * 3];
+bool BaselFaceModelManager::load() {
+	float *vecShapeMu = new float[m_nVertices * 3];
+	float *vecShapeEv = new float[m_nIdPcs];
+	float *matShapePc = new float[m_nVertices * 3 * m_nIdPcs];
+	float *vecTexMu = new float[m_nVertices * 3];
+	float *vecTexEv = new float[m_nIdPcs];
+	float *matTexPc = new float[m_nVertices * 3 * m_nIdPcs];
+	float *vecExprMu = new float[m_nVertices * 3];
+	float *vecExprEv = new float[m_nExprPcs];
+	float *matExprPc = new float[m_nVertices * 3 * m_nExprPcs];
+	unsigned int *vecTriangleList = new unsigned int[m_nFaces * 3];
 
-	H5File file(bfm_h5_path_, H5F_ACC_RDONLY);
-	LOAD_H5_MODEL(shape_mu_, shape_mu_h5_path_, PredType::NATIVE_FLOAT);
-	LOAD_H5_MODEL(shape_ev_, shape_ev_h5_path_, PredType::NATIVE_FLOAT);
-	LOAD_H5_MODEL(shape_pc_, shape_pc_h5_path_, PredType::NATIVE_FLOAT);
+	H5File file(m_strModelPath, H5F_ACC_RDONLY);
+	LOAD_H5_MODEL(vecShapeMu, m_strShapeMuH5Path, PredType::NATIVE_FLOAT);
+	LOAD_H5_MODEL(vecShapeEv, m_strShapeEvH5Path, PredType::NATIVE_FLOAT);
+	LOAD_H5_MODEL(matShapePc, m_strShapePcH5Path, PredType::NATIVE_FLOAT);
 
-	LOAD_H5_MODEL(tex_mu_, tex_mu_h5_path_, PredType::NATIVE_FLOAT);
-	LOAD_H5_MODEL(tex_ev_, tex_ev_h5_path_, PredType::NATIVE_FLOAT);
-	LOAD_H5_MODEL(tex_pc_, tex_pc_h5_path_, PredType::NATIVE_FLOAT);
+	LOAD_H5_MODEL(vecTexMu, m_strTexMuH5Path, PredType::NATIVE_FLOAT);
+	LOAD_H5_MODEL(vecTexEv, m_strTexEvH5Path, PredType::NATIVE_FLOAT);
+	LOAD_H5_MODEL(matTexPc, m_strTexPcH5Path, PredType::NATIVE_FLOAT);
 
-	LOAD_H5_MODEL(expr_mu_, expr_mu_h5_path_, PredType::NATIVE_FLOAT);
-	LOAD_H5_MODEL(expr_ev_, expr_ev_h5_path_, PredType::NATIVE_FLOAT);
-	LOAD_H5_MODEL(expr_pc_, expr_pc_h5_path_, PredType::NATIVE_FLOAT);
+	LOAD_H5_MODEL(vecExprMu, m_strExprMuH5Path, PredType::NATIVE_FLOAT);
+	LOAD_H5_MODEL(vecExprEv, m_strExprEvH5Path, PredType::NATIVE_FLOAT);
+	LOAD_H5_MODEL(matExprPc, m_strExprPcH5Path, PredType::NATIVE_FLOAT);
 
-	LOAD_H5_MODEL(tl_, tl_h5_path_, PredType::NATIVE_UINT32);
+	LOAD_H5_MODEL(vecTriangleList, m_strTriangleListH5Path, PredType::NATIVE_UINT32);
 
 	file.close();
-	shape_mu_ = shape_mu_ * 1000.0;
+	m_vecShapeMu = m_vecShapeMu * 1000.0;
 
-	if(use_fp_)
+	if(m_bUseLandmark)
 	{
-		ifstream in(fp_idx_path_, std::ios::in);
+		ifstream in(m_strLandmarkIdxPath, std::ios::in);
 		if (!in) 
 		{
-			BFM_DEBUG("[ERROR] Can't open %s.", fp_idx_path_.c_str());
+			BFM_DEBUG("[ERROR] Can't open %s.", m_strLandmarkIdxPath.c_str());
 			return false;
 		}
 
-		for (unsigned int i = 0; i < num_fp_; i++) 
+		unsigned int iLandmark;
+		for (unsigned int i = 0; i < m_nLandmarks; i++) 
 		{
-			int tmp_idx, idx;
-			in >> tmp_idx;
-			fp_idx_[i] = tmp_idx - 1;
+			in >> iLandmark;
+			m_vecLandmarkIndices[i] = iLandmark - 1;
 		}
+
+		in.close();
 	}
 	
 	return true;
 }
 
 
-void CBaselFaceModelManager::ExtractFp() 
+void BaselFaceModelManager::extractLandmarks() 
 {
-	for(unsigned int i = 0; i < num_fp_; i++) 
+	for(unsigned int iLandmark = 0; iLandmark < m_nLandmarks; iLandmark++) 
 	{
-		unsigned int idx = fp_idx_[i];
-		fp_shape_mu_(i*3) = shape_mu_(idx*3);
-		fp_shape_mu_(i*3+1) = shape_mu_(idx*3+1);
-		fp_shape_mu_(i*3+2) = shape_mu_(idx*3+2);
-		fp_expr_mu_(i*3) = expr_mu_(idx*3);
-		fp_expr_mu_(i*3+1) = expr_mu_(idx*3+1);
-		fp_expr_mu_(i*3+2) = expr_mu_(idx*3+2);
+		unsigned int idx = m_vecLandmarkIndices[iLandmark];
+		m_vecLandmarkShapeMu(iLandmark * 3) = m_vecShapeMu(idx * 3);
+		m_vecLandmarkShapeMu(iLandmark * 3 + 1) = m_vecShapeMu(idx * 3 + 1);
+		m_vecLandmarkShapeMu(iLandmark * 3 + 2) = m_vecShapeMu(idx * 3 + 2);
+		m_vecLandmarkExprMu(iLandmark * 3) = m_vecExprMu(idx * 3);
+		m_vecLandmarkExprMu(iLandmark * 3 + 1) = m_vecExprMu(idx * 3 + 1);
+		m_vecLandmarkExprMu(iLandmark * 3 + 2) = m_vecExprMu(idx * 3 + 2);
 
-		for(unsigned int j = 0; j < num_id_pc_; j++) 
+		for(unsigned int iIdPc = 0; iIdPc < m_nIdPcs; iIdPc++) 
 		{
-			fp_shape_pc_(i*3, j) = shape_pc_(idx*3, j);
-			fp_shape_pc_(i*3+1, j) = shape_pc_(idx*3+1, j);
-			fp_shape_pc_(i*3+2, j) = shape_pc_(idx*3+2, j);	
+			m_matLandmarkShapePc(iLandmark * 3, iIdPc) = m_matShapePc(idx * 3, iIdPc);
+			m_matLandmarkShapePc(iLandmark * 3 + 1, iIdPc) = m_matShapePc(idx * 3 + 1, iIdPc);
+			m_matLandmarkShapePc(iLandmark * 3 + 2, iIdPc) = m_matShapePc(idx * 3 + 2, iIdPc);	
 		}
 
-		for(unsigned int j = 0; j < num_expr_pc_; j++) 
+		for(unsigned int iExprPc = 0; iExprPc < m_nExprPcs; iExprPc++) 
 		{
-			fp_expr_pc_(i*3, j) = expr_pc_(idx*3, j);
-			fp_expr_pc_(i*3+1, j) = expr_pc_(idx*3+1, j);
-			fp_expr_pc_(i*3+2, j) = expr_pc_(idx*3+2, j);
+			m_matLandmarkExprPc(iLandmark * 3, iExprPc) = m_matExprPc(idx * 3, iExprPc);
+			m_matLandmarkExprPc(iLandmark * 3 + 1, iExprPc) = m_matExprPc(idx * 3 + 1, iExprPc);
+			m_matLandmarkExprPc(iLandmark * 3 + 2, iExprPc) = m_matExprPc(idx * 3 + 2, iExprPc);
 		}
 	}
 }
 
 
 
-void CBaselFaceModelManager::GenRndFace(double scale) 
+void BaselFaceModelManager::genRndFace(double dScale) 
 {
 	BFM_DEBUG("init random numbers (using the same scale) - ");
-	shape_coef_ = randn(num_id_pc_, scale);
-	tex_coef_   = randn(num_id_pc_, scale);
-	expr_coef_  = randn(num_expr_pc_, scale);
+
+	m_aShapeCoef = bfm_utils::randn(m_nIdPcs, dScale);
+	m_aTexCoef   = bfm_utils::randn(m_nIdPcs, dScale);
+	m_aExprCoef  = bfm_utils::randn(m_nExprPcs, dScale);
+
 	BFM_DEBUG("success\n");
-	GenFace();
+
+	this->genFace();
 }
 
 
-void CBaselFaceModelManager::GenRndFace(double shape_scale, double tex_scale, double expr_scale) 
+void BaselFaceModelManager::genRndFace(double shape_scale, double tex_scale, double expr_scale) 
 {
 	BFM_DEBUG("init random numbers (using different scales) - ");
-	shape_coef_ = randn(num_id_pc_, shape_scale);
-	tex_coef_   = randn(num_id_pc_, tex_scale);
-	expr_coef_  = randn(num_expr_pc_, expr_scale);
+
+	m_aShapeCoef = bfm_utils::randn(m_nIdPcs, shape_scale);
+	m_aTexCoef   = bfm_utils::randn(m_nIdPcs, tex_scale);
+	m_aExprCoef  = bfm_utils::randn(m_nExprPcs, expr_scale);
+
 	BFM_DEBUG("success\n");
-	GenFace();
+
+	this->genFace();
 }
 
 
-void CBaselFaceModelManager::GenFace() 
+void BaselFaceModelManager::genFace() 
 {
 	BFM_DEBUG("generate face - ");
-	current_shape_ = Coef2Object(shape_coef_, shape_mu_, shape_pc_, shape_ev_, num_id_pc_);
-	current_tex_   = Coef2Object(tex_coef_, tex_mu_, tex_pc_, tex_ev_, num_id_pc_);
-	current_expr_  = Coef2Object(expr_coef_, expr_mu_, expr_pc_, expr_ev_, num_expr_pc_);
-	current_blendshape_ = current_shape_ + current_expr_;
+
+	m_vecCurrentShape = this->coef2Object(m_aShapeCoef, m_vecShapeMu, m_matShapePc, m_vecShapeEv, m_nIdPcs);
+	m_vecCurrentTex   = this->coef2Object(m_aTexCoef, m_vecTexMu, m_matTexPc, m_vecTexEv, m_nIdPcs);
+	m_vecCurrentExpr  = this->coef2Object(m_aExprCoef, m_vecExprMu, m_matExprPc, m_vecExprEv, m_nExprPcs);
+	m_vecCurrentBlendshape = m_vecCurrentShape + m_vecCurrentExpr;
+
 	BFM_DEBUG("success\n");
 }
 
 
-void CBaselFaceModelManager::GenFpFace()  
+void BaselFaceModelManager::genFpFace()  
 {
 	BFM_DEBUG("generate feature point face - ");
-	fp_current_shape_ = Coef2Object(shape_coef_, fp_shape_mu_, fp_shape_pc_, shape_ev_, num_id_pc_);
-	fp_current_expr_ = Coef2Object(expr_coef_, fp_expr_mu_, fp_expr_pc_, expr_ev_, num_expr_pc_);
+
+	fp_current_shape_ = this->coef2Object(m_aShapeCoef, m_vecLandmarkShapeMu, m_matLandmarkShapePc, m_vecShapeEv, m_nIdPcs);
+	fp_current_expr_ = this->coef2Object(m_aExprCoef, m_vecLandmarkExprMu, m_matLandmarkExprPc, m_vecExprEv, m_nExprPcs);
 	fp_current_blendshape_ = fp_current_shape_ + fp_current_expr_;
+
 	BFM_DEBUG("success\n");
 }
 
 
-void CBaselFaceModelManager::GenRMat() 
+void BaselFaceModelManager::genRMat() 
 {
 	BFM_DEBUG("generate rotation matrix - ");
-	const double &yaw   = ext_params_[0];
-	const double &pitch = ext_params_[1];
-	const double &roll  = ext_params_[2];
-	r_mat_ = bfm_utils::Euler2Mat(yaw, pitch, roll, false);
+
+	// TODO:: yaw/pitch/roll regulation
+
+	const double &yaw   = m_aExtParams[0];
+	const double &pitch = m_aExtParams[1];
+	const double &roll  = m_aExtParams[2];
+	m_matR = bfm_utils::Euler2Mat(yaw, pitch, roll, false);
+
 	BFM_DEBUG("success\n");
 }
 
 
-void CBaselFaceModelManager::GenTVec()
+void BaselFaceModelManager::genTVec()
 {
 	BFM_DEBUG("generate translation vector - ");	
-	const double &tx = ext_params_[3];
-	const double &ty = ext_params_[4];
-	const double &tz = ext_params_[5];
-	t_vec_ << tx, ty, tz;	
+
+	const double &tx = m_aExtParams[3];
+	const double &ty = m_aExtParams[4];
+	const double &tz = m_aExtParams[5];
+	m_vecT << tx, ty, tz;	
+
 	BFM_DEBUG("success\n");
-	PrintTVec();
+
+	this->printTVec();
 }
 
-void CBaselFaceModelManager::GenTransMat()
+void BaselFaceModelManager::genTransMat()
 {
 	BFM_DEBUG("generate transform matrix (rotation + translation):\n");
-	GenRMat();
-	GenTVec();
+
+	this->genRMat();
+	this->genTVec();
 }
 
 
-void CBaselFaceModelManager::GenExtParams()
+void BaselFaceModelManager::genExtParams()
 {
 	BFM_DEBUG("generate external paramter:\n");
-	if(!bfm_utils::IsRMat(r_mat_))
+
+	if(!bfm_utils::IsRMat(m_matR))
 	{
 		BFM_DEBUG("	detect current matrix does not satisfy constraints - ");
-		bfm_utils::SatisfyExtMat(r_mat_, t_vec_);
+		bfm_utils::SatisfyExtMat(m_matR, m_vecT);
 		BFM_DEBUG("solve\n");
 	}
-	double sy = sqrt(r_mat_(0,0) * r_mat_(0,0) +  r_mat_(1,0) * r_mat_(1,0));
-    bool is_singular = sy < 1e-6;
 
-    if (!is_singular) 
+	double sy = std::sqrt(m_matR(0,0) * m_matR(0,0) +  m_matR(1,0) * m_matR(1,0));
+    bool bIsSingular = sy < 1e-6;
+
+    if (!bIsSingular) 
 	{
-        ext_params_[2] = atan2(r_mat_(2,1) , r_mat_(2,2));
-        ext_params_[1] = atan2(-r_mat_(2,0), sy);
-        ext_params_[0] = atan2(r_mat_(1,0), r_mat_(0,0));
+        m_aExtParams[2] = atan2(m_matR(2,1) , m_matR(2,2));
+        m_aExtParams[1] = atan2(-m_matR(2,0), sy);
+        m_aExtParams[0] = atan2(m_matR(1,0), m_matR(0,0));
     } 
 	else 
 	{
-        ext_params_[2] = atan2(-r_mat_(1,2), r_mat_(1,1));
-        ext_params_[1] = atan2(-r_mat_(2,0), sy);
-        ext_params_[0] = 0;
+        m_aExtParams[2] = atan2(-m_matR(1,2), m_matR(1,1));
+        m_aExtParams[1] = atan2(-m_matR(2,0), sy);
+        m_aExtParams[0] = 0;
     }
-	ext_params_[3] = t_vec_(0, 0);
-	ext_params_[4] = t_vec_(1, 0);
-	ext_params_[5] = t_vec_(2, 0);
-	GenTransMat();
+	m_aExtParams[3] = m_vecT(0, 0);
+	m_aExtParams[4] = m_vecT(1, 0);
+	m_aExtParams[5] = m_vecT(2, 0);
+	
+	this->genTransMat();
 }
 
 
-void CBaselFaceModelManager::AccExtParams(double *x) 
+void BaselFaceModelManager::accExtParams(double *extParams) 
 {
 	/* in every iteration, P = R`(RP+t)+t`, 
 	 * R_{new} = R`R_{old}
 	 * t_{new} = R`t_{old} + t`
 	 */
 
-	Matrix3d d_r_mat;
-	Vector3d d_t_vec;	
-	double d_yaw   = x[0];
-	double d_pitch = x[1];
-	double d_roll  = x[2];
-	double d_tx = x[3];
-	double d_ty = x[4];
-	double d_tz = x[5];
+	Matrix3d matR;
+	Vector3d vecT;	
+	double dYaw   = extParams[0];
+	double dPitch = extParams[1];
+	double dRoll  = extParams[2];
+	double dTx = extParams[3];
+	double dTy = extParams[4];
+	double dTz = extParams[5];
 
 	/* accumulate rotation */
-	d_r_mat = bfm_utils::Euler2Mat(d_yaw, d_pitch, d_roll, true);
-	r_mat_ = d_r_mat * r_mat_;
+	matR = bfm_utils::Euler2Mat(dYaw, dPitch, dRoll, true);
+	m_matR = matR * m_matR;
 
 	/* accumulate translation */
-	d_t_vec << d_tx, d_ty, d_tz;
-	t_vec_ = d_r_mat * t_vec_ + d_t_vec;
+	vecT << dTx, dTy, dTz;
+	m_vecT = matR * m_vecT + vecT;
 }	
 
 
-void CBaselFaceModelManager::WritePly(std::string fn, model_write_mode mode) const 
+void BaselFaceModelManager::writePly(std::string fn, model_write_mode mode) const 
 {
 	std::ofstream out;
 	/* Note: In Linux Cpp, we should use std::ios::BFM_OUT as flag, which is not necessary in Windows */
@@ -313,42 +336,43 @@ void CBaselFaceModelManager::WritePly(std::string fn, model_write_mode mode) con
 	out << "ply\n";
 	out << "format binary_little_endian 1.0\n";
 	out << "comment Made from the 3D Morphable Face Model of the Univeristy of Basel, Switzerland.\n";
-	out << "element vertex " << num_vertice_ << "\n";
+	out << "element vertex " << m_nVertices << "\n";
 	out << "property float x\n";
 	out << "property float y\n";
 	out << "property float z\n";
 	out << "property uchar red\n";
 	out << "property uchar green\n";
 	out << "property uchar blue\n";
-	out << "element face " << num_face_ << "\n";
+	out << "element face " << m_nFaces << "\n";
 	out << "property list uchar int vertex_indices\n";
 	out << "end_header\n";
 
 	int cnt = 0;
-	for (int i = 0; i < num_vertice_; i++) 
+	for (int iVertice = 0; iVertice < m_nVertices; iVertice++) 
 	{
 		float x, y, z;
 		if(mode & NO_EXPR) 
 		{
-			x = float(current_shape_(i * 3));
-			y = float(current_shape_(i * 3 + 1));
-			z = float(current_shape_(i * 3 + 2));
+			x = float(m_vecCurrentShape(iVertice * 3));
+			y = float(m_vecCurrentShape(iVertice * 3 + 1));
+			z = float(m_vecCurrentShape(iVertice * 3 + 2));
 		} 
 		else 
 		{
-			x = float(current_blendshape_(i * 3));
-			y = float(current_blendshape_(i * 3 + 1));
-			z = float(current_blendshape_(i * 3 + 2));
+			x = float(m_vecCurrentBlendshape(iVertice * 3));
+			y = float(m_vecCurrentBlendshape(iVertice * 3 + 1));
+			z = float(m_vecCurrentBlendshape(iVertice * 3 + 2));
 		}
 
 		if(mode & CAMERA_COORD) 
 		{
-			bfm_utils::Trans(ext_params_, x, y, z);
+			bfm_utils::Trans(m_aExtParams, x, y, z);
 			y = -y; z = -z;
 		}
 
 		unsigned char r, g, b;
-		if ((mode & PICK_FP) && std::find(fp_idx_.begin(), fp_idx_.end(), i) != fp_idx_.end()) 
+		if ((mode & PICK_LANDMARK) && 
+			std::find(m_vecLandmarkIndices.begin(), m_vecLandmarkIndices.end(), iVertice) != m_vecLandmarkIndices.end()) 
 		{
 			r = 255;
 			g = 0;
@@ -357,9 +381,9 @@ void CBaselFaceModelManager::WritePly(std::string fn, model_write_mode mode) con
 		} 
 		else 
 		{
-			r = current_tex_(i * 3);
-			g = current_tex_(i * 3 + 1);
-			b = current_tex_(i * 3 + 2);
+			r = m_vecCurrentTex(iVertice * 3);
+			g = m_vecCurrentTex(iVertice * 3 + 1);
+			b = m_vecCurrentTex(iVertice * 3 + 2);
 		}
 
 		out.write((char *)&x, sizeof(x));
@@ -370,19 +394,19 @@ void CBaselFaceModelManager::WritePly(std::string fn, model_write_mode mode) con
 		out.write((char *)&b, sizeof(b));
 	}
 
-	if ((mode & PICK_FP) && cnt != num_fp_) 
+	if ((mode & PICK_LANDMARK) && cnt != m_nLandmarks) 
 	{
 		BFM_DEBUG("[ERROR] Pick too less landmarks.\n");
 		BFM_DEBUG("Number of picked points is %d.\n", cnt);
 	}
 
 	unsigned char N_VER_PER_FACE = 3;
-	for (int i = 0; i < num_face_; i++) 
+	for (int iFace = 0; iFace < m_nFaces; iFace++) 
 	{
 		out.write((char *)&N_VER_PER_FACE, sizeof(N_VER_PER_FACE));
-		int x = tl_(i * 3) - 1;
-		int y = tl_(i * 3 + 1) - 1;
-		int z = tl_(i * 3 + 2) - 1;
+		int x = m_vecTriangleList(iFace * 3) - 1;
+		int y = m_vecTriangleList(iFace * 3 + 1) - 1;
+		int z = m_vecTriangleList(iFace * 3 + 2) - 1;
 		out.write((char *)&y, sizeof(y));
 		out.write((char *)&x, sizeof(x));
 		out.write((char *)&z, sizeof(z));
@@ -392,7 +416,7 @@ void CBaselFaceModelManager::WritePly(std::string fn, model_write_mode mode) con
 }
 
 
-void CBaselFaceModelManager::WriteFpPly(std::string fn) const {
+void BaselFaceModelManager::writeFpPly(std::string fn) const {
 	std::ofstream out;
 	/* Note: In Linux Cpp, we should use std::ios::BFM_OUT as flag, which is not necessary in Windows */
 	out.open(fn, std::ios::out | std::ios::binary);
@@ -405,14 +429,14 @@ void CBaselFaceModelManager::WriteFpPly(std::string fn) const {
 	out << "ply\n";
 	out << "format binary_little_endian 1.0\n";
 	out << "comment Made from the 3D Morphable Face Model of the Univeristy of Basel, Switzerland.\n";
-	out << "element vertex " << num_fp_ << "\n";
+	out << "element vertex " << m_nLandmarks << "\n";
 	out << "property float x\n";
 	out << "property float y\n";
 	out << "property float z\n";
 	out << "end_header\n";
 
 	int cnt = 0;
-	for (int i = 0; i < num_fp_; i++) 
+	for (int i = 0; i < m_nLandmarks; i++) 
 	{
 		float x, y, z;
 		x = float(fp_current_blendshape_(i * 3));
@@ -427,9 +451,30 @@ void CBaselFaceModelManager::WriteFpPly(std::string fn) const {
 }
 
 
-void CBaselFaceModelManager::ClrExtParams()
+void BaselFaceModelManager::clrExtParams()
 {
-	std::fill(ext_params_, ext_params_ + 6, 0.0);
-	GenTransMat();
-	GenFace();
+	std::fill(m_aExtParams, m_aExtParams + 6, 0.0);
+	this->genTransMat();
+	this->genFace();
+}
+
+template<typename Derived>
+Matrix<Derived, Dynamic, 1> BaselFaceModelManager::coef2Object(
+	const Derived *const &aCoef, 
+	const VectorXd &vecMu, 
+	const MatrixXd &matPc, 
+	const VectorXd &vecEv, 
+	unsigned int nLength) const 
+{ 
+	assert(aCoef != nullptr);
+	assert(nLength >= 0);
+
+	Matrix<Derived, Dynamic, 1> tmpCoef(nLength);
+	for(int i = 0; i < nLength; i++)
+		tmpCoef(i) = aCoef[i];
+
+	Matrix<Derived, Dynamic, 1> tmpMu = vecMu.cast<Derived>();
+	Matrix<Derived, Dynamic, 1> tmpEv = vecEv.cast<Derived>();
+	Matrix<Derived, Dynamic, Dynamic> tmpPc = matPc.cast<Derived>();
+	return tmpMu + tmpPc * tmpCoef.cwiseProduct(tmpEv);
 }

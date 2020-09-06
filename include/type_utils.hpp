@@ -1,4 +1,7 @@
-#pragma once
+#ifndef BFM_TYPE_UTILS_H
+#define BFM_TYPE_UTILS_H
+
+
 #include <iostream>
 #include <string>
 #include "constant.h"
@@ -100,3 +103,5 @@ namespace bfm_utils
 		return res;
 	}
 }
+
+#endif // BFM_TYPE_UTILS_H

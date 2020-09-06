@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
 	if(nFp != 0) in >> strFpIdxPath;
 	in.close();
 
-	CBaselFaceModelManager *modelManager = new CBaselFaceModelManager(
+	BaselFaceModelManager *modelManager = new BaselFaceModelManager(
 		strBfmH5Path,
 		nVertice, nFace, nIdPc, nExprPc,
 		aIntParams,
@@ -52,11 +52,11 @@ int main(int argc, char *argv[])
 		strFpIdxPath
 	);
 
-	modelManager->GenAvgFace();
-	modelManager->WritePly("avg_face.ply", NONE_MODE);
+	modelManager->genAvgFace();
+	modelManager->writePly("avg_face.ply", NONE_MODE);
 
-	modelManager->GenRndFace(1.0);
-	modelManager->WritePly("rnd_face.ply", NONE_MODE);
+	modelManager->genRndFace(1.0);
+	modelManager->writePly("rnd_face.ply", NONE_MODE);
 
 	return 0;
 }

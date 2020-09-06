@@ -1,4 +1,5 @@
-#pragma once
+#ifndef TRANSFORM_HPP
+#define TRANSFORM_HPP
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <opencv2/opencv.hpp> 
@@ -257,3 +258,5 @@ namespace bfm_utils {
 		CvMat2EigenMat(cv_t_vec, t_vec);
 	}
 }
+
+#endif	// TRANFORM_HPP

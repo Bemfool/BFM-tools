@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿#ifndef BFM_DATA_H
+#define BFM_DATA_H
+
+
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -10,15 +13,6 @@
 using namespace H5;
 using namespace std;
 using Eigen::MatrixBase;
-
-
-template<typename _Tp, typename _Ep>
-void Raw2Mat(MatrixBase<_Tp> &m, _Ep *raw) 
-{
-	for (unsigned int i = 0; i < m.rows(); i++)
-		for (unsigned int j = 0; j < m.cols(); j++)
-			m(i, j) = raw[i * (unsigned int)m.cols() + j];
-}
 
 
 /* Macro Function: load_hdf5_model
@@ -33,11 +27,30 @@ void Raw2Mat(MatrixBase<_Tp> &m, _Ep *raw)
 
 #define LOAD_H5_MODEL(model_type, dataset_path, data_type) \
 		{ \
-			DataSet model_type##data = file.openDataSet(dataset_path); \
-			model_type##data.read(model_type##raw, data_type); \
-			model_type##data.close(); \
-			Raw2Mat(model_type, model_type##raw); \
-			if(model_type##raw){ \
-				delete [] model_type##raw; \
+			DataSet model_type##DataSet = file.openDataSet(dataset_path); \
+			model_type##DataSet.read(model_type, data_type); \
+			model_type##DataSet.close(); \
+			bfm_utils::Raw2Mat(m_##model_type, model_type); \
+			if(model_type){ \
+				delete [] model_type; \
 			} \
 		} 
+
+
+namespace bfm_utils
+{
+
+
+	template<typename _Tp, typename _Ep>
+	void Raw2Mat(MatrixBase<_Tp> &m, _Ep *raw) 
+	{
+		for (unsigned int i = 0; i < m.rows(); i++)
+			for (unsigned int j = 0; j < m.cols(); j++)
+				m(i, j) = raw[i * (unsigned int)m.cols() + j];
+	}
+
+
+} // NAMESPACE BFM_UTILS
+
+
+#endif // BFM_DATA_H
