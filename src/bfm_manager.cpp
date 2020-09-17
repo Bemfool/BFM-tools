@@ -39,15 +39,15 @@ BaselFaceModelManager::BaselFaceModelManager(
 {
 	for(unsigned int iParam = 0; iParam < 4; iParam++)
 		m_aIntParams[iParam] = aIntParams[iParam];
-	if(!nLandmarks)
-		m_bUseLandmark = false;
+
+	m_bUseLandmark = nLandmarks == 0 ? false : true;
 
 	this->alloc();
 	this->load();
 	if(m_bUseLandmark)
 	{
 		this->extractLandmarks();
-		this->genFpFace();
+		this->genLandmarkFace();
 	}
 	this->genAvgFace();
 }
@@ -202,26 +202,26 @@ void BaselFaceModelManager::genRndFace(double shape_scale, double tex_scale, dou
 
 void BaselFaceModelManager::genFace() 
 {
-	BFM_DEBUG("generate face - ");
+	BFM_DEBUG("[BFM_MANAGER]Generate face with shape and expression coefficients -");
 
 	m_vecCurrentShape = this->coef2Object(m_aShapeCoef, m_vecShapeMu, m_matShapePc, m_vecShapeEv, m_nIdPcs);
 	m_vecCurrentTex   = this->coef2Object(m_aTexCoef, m_vecTexMu, m_matTexPc, m_vecTexEv, m_nIdPcs);
 	m_vecCurrentExpr  = this->coef2Object(m_aExprCoef, m_vecExprMu, m_matExprPc, m_vecExprEv, m_nExprPcs);
 	m_vecCurrentBlendshape = m_vecCurrentShape + m_vecCurrentExpr;
 
-	BFM_DEBUG("success\n");
+	BFM_DEBUG("Success\n");
 }
 
 
-void BaselFaceModelManager::genFpFace()  
+void BaselFaceModelManager::genLandmarkFace()  
 {
-	BFM_DEBUG("generate feature point face - ");
+	BFM_DEBUG("[BFM_MANAGER] Generate landmarks with shape and expression coefficients -");
 
-	fp_current_shape_ = this->coef2Object(m_aShapeCoef, m_vecLandmarkShapeMu, m_matLandmarkShapePc, m_vecShapeEv, m_nIdPcs);
-	fp_current_expr_ = this->coef2Object(m_aExprCoef, m_vecLandmarkExprMu, m_matLandmarkExprPc, m_vecExprEv, m_nExprPcs);
-	fp_current_blendshape_ = fp_current_shape_ + fp_current_expr_;
+	m_vecLandmarkCurrentShape = this->coef2Object(m_aShapeCoef, m_vecLandmarkShapeMu, m_matLandmarkShapePc, m_vecShapeEv, m_nIdPcs);
+	m_vecLandmarkCurrentExpr = this->coef2Object(m_aExprCoef, m_vecLandmarkExprMu, m_matLandmarkExprPc, m_vecExprEv, m_nExprPcs);
+	m_vecLandmarkCurrentBlendshape = m_vecLandmarkCurrentShape + m_vecLandmarkCurrentExpr;
 
-	BFM_DEBUG("success\n");
+	BFM_DEBUG("Success\n");
 }
 
 
@@ -323,7 +323,7 @@ void BaselFaceModelManager::accExtParams(double *extParams)
 }	
 
 
-void BaselFaceModelManager::writePly(std::string fn, model_write_mode mode) const 
+void BaselFaceModelManager::writePly(std::string fn, long mode) const 
 {
 	std::ofstream out;
 	/* Note: In Linux Cpp, we should use std::ios::BFM_OUT as flag, which is not necessary in Windows */
@@ -351,7 +351,7 @@ void BaselFaceModelManager::writePly(std::string fn, model_write_mode mode) cons
 	for (int iVertice = 0; iVertice < m_nVertices; iVertice++) 
 	{
 		float x, y, z;
-		if(mode & NO_EXPR) 
+		if(mode & ModelWriteMode_NoExpr) 
 		{
 			x = float(m_vecCurrentShape(iVertice * 3));
 			y = float(m_vecCurrentShape(iVertice * 3 + 1));
@@ -364,14 +364,14 @@ void BaselFaceModelManager::writePly(std::string fn, model_write_mode mode) cons
 			z = float(m_vecCurrentBlendshape(iVertice * 3 + 2));
 		}
 
-		if(mode & CAMERA_COORD) 
+		if(mode & ModelWriteMode_CameraCoord) 
 		{
 			bfm_utils::Trans(m_aExtParams, x, y, z);
 			y = -y; z = -z;
 		}
 
 		unsigned char r, g, b;
-		if ((mode & PICK_LANDMARK) && 
+		if ((mode & ModelWriteMode_PickLandmark) && 
 			std::find(m_vecLandmarkIndices.begin(), m_vecLandmarkIndices.end(), iVertice) != m_vecLandmarkIndices.end()) 
 		{
 			r = 255;
@@ -394,7 +394,7 @@ void BaselFaceModelManager::writePly(std::string fn, model_write_mode mode) cons
 		out.write((char *)&b, sizeof(b));
 	}
 
-	if ((mode & PICK_LANDMARK) && cnt != m_nLandmarks) 
+	if ((mode & ModelWriteMode_PickLandmark) && cnt != m_nLandmarks) 
 	{
 		BFM_DEBUG("[ERROR] Pick too less landmarks.\n");
 		BFM_DEBUG("Number of picked points is %d.\n", cnt);
@@ -439,9 +439,9 @@ void BaselFaceModelManager::writeFpPly(std::string fn) const {
 	for (int i = 0; i < m_nLandmarks; i++) 
 	{
 		float x, y, z;
-		x = float(fp_current_blendshape_(i * 3));
-		y = float(fp_current_blendshape_(i * 3 + 1));
-		z = float(fp_current_blendshape_(i * 3 + 2));
+		x = float(m_vecLandmarkCurrentBlendshape(i * 3));
+		y = float(m_vecLandmarkCurrentBlendshape(i * 3 + 1));
+		z = float(m_vecLandmarkCurrentBlendshape(i * 3 + 2));
 		out.write((char *)&x, sizeof(x));
 		out.write((char *)&y, sizeof(y));
 		out.write((char *)&z, sizeof(z));
@@ -456,25 +456,4 @@ void BaselFaceModelManager::clrExtParams()
 	std::fill(m_aExtParams, m_aExtParams + 6, 0.0);
 	this->genTransMat();
 	this->genFace();
-}
-
-template<typename Derived>
-Matrix<Derived, Dynamic, 1> BaselFaceModelManager::coef2Object(
-	const Derived *const &aCoef, 
-	const VectorXd &vecMu, 
-	const MatrixXd &matPc, 
-	const VectorXd &vecEv, 
-	unsigned int nLength) const 
-{ 
-	assert(aCoef != nullptr);
-	assert(nLength >= 0);
-
-	Matrix<Derived, Dynamic, 1> tmpCoef(nLength);
-	for(int i = 0; i < nLength; i++)
-		tmpCoef(i) = aCoef[i];
-
-	Matrix<Derived, Dynamic, 1> tmpMu = vecMu.cast<Derived>();
-	Matrix<Derived, Dynamic, 1> tmpEv = vecEv.cast<Derived>();
-	Matrix<Derived, Dynamic, Dynamic> tmpPc = matPc.cast<Derived>();
-	return tmpMu + tmpPc * tmpCoef.cwiseProduct(tmpEv);
 }

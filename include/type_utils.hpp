@@ -74,7 +74,8 @@ namespace bfm_utils
 	template<class _Tp> inline
 	void PrintArr(_Tp *arr, int len)
 	{
-		for(unsigned int i = 0; i < len; i++) std::cout << arr[i] << " ";
+		for(unsigned int i = 0; i < len; i++) 
+			std::cout << arr[i] << " ";
 		std::cout << "\n";
 	}
 

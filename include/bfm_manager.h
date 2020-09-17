@@ -6,8 +6,8 @@
 #include "transform.hpp"
 #include "type_utils.hpp"
 #include <Eigen/Dense>
+#include <Eigen/StdVector>
 #include <opencv2/core/eigen.hpp>
-
 
 using Eigen::Matrix;
 using Eigen::Matrix3d;
@@ -87,36 +87,30 @@ public:
 	void genFace();
 
 
-	void genFpFace();
+	void genLandmarkFace();
 
 
 	template<typename Derived>
-	Matrix<Derived, Dynamic, Dynamic> genFpFace(const Derived* const shapeCoef,const Derived* const exprCoef) const 
+	Matrix<Derived, Dynamic, 1> genLandmarkFace(const Derived* const shapeCoef,const Derived* const exprCoef) const 
 	{
-		Matrix<Derived, Dynamic, Dynamic> fp_current_shape = coef2Object(shapeCoef, m_vecLandmarkShapeMu, m_matLandmarkShapePc, m_vecShapeEv, m_nIdPcs);
-		Matrix<Derived, Dynamic, Dynamic> fp_current_expr = coef2Object(exprCoef, m_vecLandmarkExprMu, m_matLandmarkExprPc, m_vecExprEv, m_nExprPcs);
-		Matrix<Derived, Dynamic, Dynamic> fp_current_blendshape = fp_current_shape + fp_current_expr;	
-		return fp_current_blendshape_;
+		return this->coef2Object(shapeCoef, m_vecLandmarkShapeMu, m_matLandmarkShapePc, m_vecShapeEv, m_nIdPcs) +
+			this->coef2Object(exprCoef, m_vecLandmarkExprMu, m_matLandmarkExprPc, m_vecExprEv, m_nExprPcs);
 	}
 
 
-	template<typename T>
-	Matrix<T, Dynamic, Dynamic> genFpFaceByShape(const T * const shape_coef) const 
+	template<typename _Tp>
+	Matrix<_Tp, Dynamic, 1> genLandmarkFaceByShape(const _Tp * const aShapeCoef) const 
 	{
-		Matrix<T, Dynamic, Dynamic> fp_current_shape = coef2object(shape_coef, m_vecLandmarkShapeMu, m_matLandmarkShapePc, m_vecShapeEv, m_nIdPcs);
-		Matrix<T, Dynamic, Dynamic> fp_current_expr = fp_current_expr_.template cast<T>();
-		Matrix<T, Dynamic, Dynamic> fp_current_blendshape = fp_current_shape + fp_current_expr;	
-		return fp_current_blendshape;		
+		return this->coef2Object(aShapeCoef, m_vecLandmarkShapeMu, m_matLandmarkShapePc, m_vecShapeEv, m_nIdPcs) +
+			m_vecLandmarkCurrentExpr.template cast<_Tp>();
 	}
 
 
-	template<typename T>
-	Matrix<T, Dynamic, Dynamic> genFpFaceByExpr(const T * const expr_coef) const 
+	template<typename _Tp>
+	Matrix<_Tp, Dynamic, 1> genLandmarkFaceByExpr(const _Tp * const aExprCoef) const 
 	{
-		Matrix<T, Dynamic, Dynamic> fp_current_shape = fp_current_shape.template cast<T>();
-		Matrix<T, Dynamic, Dynamic> fp_current_expr = coef2Object(expr_coef, m_vecLandmarkExprMu, m_matLandmarkExprPc, m_vecExprEv, m_nExprPcs);
-		Matrix<T, Dynamic, Dynamic> fp_current_blendshape = fp_current_shape + fp_current_expr;	
-		return fp_current_blendshape;		
+		return m_vecLandmarkCurrentShape.template cast<_Tp>() + 
+			this->coef2Object(aExprCoef, m_vecLandmarkExprMu, m_matLandmarkExprPc, m_vecExprEv, m_nExprPcs);
 	}
 
 
@@ -135,7 +129,7 @@ public:
 	void accExtParams(double *x);
 
 
-	void writePly(std::string fn = "face.ply", model_write_mode mode = NONE_MODE) const;
+	void writePly(std::string fn = "face.ply", long mode = ModelWriteMode_None) const;
 
 
 	void writeFpPly(std::string fn = "fp_face.ply") const;
@@ -149,77 +143,77 @@ public:
 /*************************************************************************************************************/
 
 
-	inline const unsigned int get_num_id_pc_() const { return m_nIdPcs; }
-	inline const unsigned int get_num_expr_pc() const { return m_nExprPcs; }
-	inline const unsigned int get_num_face_() const { return m_nFaces; }
-	inline const unsigned int get_num_vertice_() const { return m_nVertices; }
-	inline const unsigned int get_num_fp() const { return m_nLandmarks; }
+	inline const unsigned int getNIdPcs() const { return m_nIdPcs; }
+	inline const unsigned int getNExprPcs() const { return m_nExprPcs; }
+	inline const unsigned int getNFaces() const { return m_nFaces; }
+	inline const unsigned int getNVertices() const { return m_nVertices; }
+	inline const unsigned int getNLandmarks() const { return m_nLandmarks; }
 	
-	inline double *get_mutable_shape_coef() { return m_aShapeCoef; }
-	inline double *get_mutable_tex_coef() { return m_aTexCoef; }
-	inline double *get_mutable_expr_coef() { return m_aExprCoef; }
-	inline double *get_mutable_ext_params() { return m_aExtParams; }
-	inline double *get_mutable_int_params() { return m_aIntParams; }
-	inline const double *get_ext_params() const { return m_aExtParams; }
-	inline const double *get_int_params() const { return m_aIntParams; }
+	inline double *getMutableShapeCoef() { return m_aShapeCoef; }
+	inline double *getMutableTexCoef() { return m_aTexCoef; }
+	inline double *getMutableExprCoef() { return m_aExprCoef; }
+	inline double *getMutableExtParams() { return m_aExtParams; }
+	inline double *getMutableIntParams() { return m_aIntParams; }
+	inline const double *getExtParams() const { return m_aExtParams; }
+	inline const double *getIntParams() const { return m_aIntParams; }
 
-	inline const Matrix3d get_r_mat() const { return m_matR; }
-	inline const Vector3d get_t_vec() const { return m_vecT; }
+	inline const Matrix3d getMatR() const { return m_matR; }
+	inline const Vector3d getVecT() const { return m_vecT; }
 
-	inline const double get_fx() const { return m_aIntParams[0]; }
-	inline const double get_fy() const { return m_aIntParams[1]; }
-	inline const double get_cx() const { return m_aIntParams[2]; }
-	inline const double get_cy() const { return m_aIntParams[3]; }
-	inline const double get_yaw() const { return m_aExtParams[0]; }
-	inline const double get_pitch() const { return m_aExtParams[1]; }
-	inline const double get_roll() const { return m_aExtParams[2]; }
-	inline const double get_tx() const { return m_aExtParams[3]; }
-	inline const double get_ty() const { return m_aExtParams[4]; }
-	inline const double get_tz() const { return m_aExtParams[5]; }
-	inline void set_yaw(double yaw)     { m_aExtParams[0] = yaw;   genRMat();}
-	inline void set_pitch(double pitch) { m_aExtParams[1] = pitch; genRMat();}
-	inline void set_roll(double roll)   { m_aExtParams[2] = roll;  genRMat();}
-	inline void set_rotation(double yaw, double pitch, double roll) 
+	inline const double getFx() const { return m_aIntParams[0]; }
+	inline const double getFy() const { return m_aIntParams[1]; }
+	inline const double getCx() const { return m_aIntParams[2]; }
+	inline const double getCy() const { return m_aIntParams[3]; }
+	inline const double getYaw() const { return m_aExtParams[0]; }
+	inline const double getPitch() const { return m_aExtParams[1]; }
+	inline const double getRoll() const { return m_aExtParams[2]; }
+	inline const double getTx() const { return m_aExtParams[3]; }
+	inline const double getTy() const { return m_aExtParams[4]; }
+	inline const double getTz() const { return m_aExtParams[5]; }
+	inline void setYaw(double yaw)     { m_aExtParams[0] = yaw;   genRMat();}
+	inline void setPitch(double pitch) { m_aExtParams[1] = pitch; genRMat();}
+	inline void setRoll(double roll)   { m_aExtParams[2] = roll;  genRMat();}
+	inline void setRotation(double yaw, double pitch, double roll) 
 	{
-		set_yaw(yaw); 
-		set_pitch(pitch); 
-		set_roll(roll);
+		setYaw(yaw); 
+		setPitch(pitch); 
+		setRoll(roll);
 	}
-	inline void set_tx(double tx) { m_aExtParams[3] = tx; m_vecT(0) = tx; }
-	inline void set_ty(double ty) { m_aExtParams[4] = ty; m_vecT(1) = ty; }
-	inline void set_tz(double tz) { m_aExtParams[5] = tz; m_vecT(2) = tz; }
-	inline void set_r_mat(const Matrix3d &r_mat) { m_matR = r_mat; }
-	inline void set_r_mat(const cv::Mat &r_mat) { cv::cv2eigen(r_mat, m_matR); }
-	inline void set_r_mat(CvMat *r_mat)
+	inline void setTx(double tx) { m_aExtParams[3] = tx; m_vecT(0) = tx; }
+	inline void setTy(double ty) { m_aExtParams[4] = ty; m_vecT(1) = ty; }
+	inline void setTz(double tz) { m_aExtParams[5] = tz; m_vecT(2) = tz; }
+	inline void setMatR(const Matrix3d &r_mat) { m_matR = r_mat; }
+	inline void setMatR(const cv::Mat &r_mat) { cv::cv2eigen(r_mat, m_matR); }
+	inline void setMatR(CvMat *r_mat)
 	{
 		m_matR(0, 0) = cvmGet(r_mat, 0, 0); m_matR(0, 1) = cvmGet(r_mat, 0, 1); m_matR(0, 2) = cvmGet(r_mat, 0, 2);
 		m_matR(1, 0) = cvmGet(r_mat, 1, 0); m_matR(1, 1) = cvmGet(r_mat, 1, 1); m_matR(1, 2) = cvmGet(r_mat, 1, 2);
 		m_matR(2, 0) = cvmGet(r_mat, 2, 0); m_matR(2, 1) = cvmGet(r_mat, 2, 1); m_matR(2, 2) = cvmGet(r_mat, 2, 2);		
 	}
-	inline void set_t_vec(const Vector3d &t_vec) { m_vecT = t_vec; }
-	inline void set_t_vec(const cv::Mat &t_vec) { cv::cv2eigen(t_vec, m_vecT); }
-	inline void set_t_vec(CvMat *t_vec)
+	inline void setVecT(const Vector3d &t_vec) { m_vecT = t_vec; }
+	inline void setVecT(const cv::Mat &t_vec) { cv::cv2eigen(t_vec, m_vecT); }
+	inline void setVecT(CvMat *t_vec)
 	{
 		m_vecT(0) = cvmGet(t_vec, 0, 0);
 		m_vecT(1) = cvmGet(t_vec, 1, 0);
 		m_vecT(2) = cvmGet(t_vec, 2, 0);		
 	}
 
-	inline const VectorXd &get_current_shape() const { return m_vecCurrentShape; }
-	inline const VectorXd &get_current_tex() const { return m_vecCurrentTex; }
-	inline VectorXd get_std_tex() const 
+	inline const VectorXd &getCurrentShape() const { return m_vecCurrentShape; }
+	inline const VectorXd &getCurrentTex() const { return m_vecCurrentTex; }
+	inline VectorXd getStdTex() const 
 	{
 		VectorXd res(m_nVertices * 3);
 		for(auto i = 0; i < res.size(); i++)
 			res(i) = m_vecTexMu(i) / 255.0;
 		return res;
 	} 
-	inline const VectorXd &get_current_expr() const { return m_vecCurrentExpr; }
-	inline const VectorXd &get_current_blendshape() const { return m_vecCurrentBlendshape; }
-	inline const VectorXd &get_fp_current_blendshape() const { return fp_current_blendshape_; }
-	VectorXd get_fp_current_blendshape_transformed() { return bfm_utils::TransPoints(m_matR, m_vecT, fp_current_blendshape_); }
-	VectorXd get_current_blendshape_transformed() { return bfm_utils::TransPoints(m_matR, m_vecT, m_vecCurrentBlendshape); }
-	inline const VectorXd &get_tl() const 	{ return m_vecTriangleList; }
+	inline const VectorXd &getCurrentExpr() const { return m_vecCurrentExpr; }
+	inline const VectorXd &getCurrentBlendshape() const { return m_vecCurrentBlendshape; }
+	inline const VectorXd &getLandmarkCurrentBlendshape() const { return m_vecLandmarkCurrentBlendshape; }
+	VectorXd getLandmarkCurrentBlendshapeTransformed() { return bfm_utils::TransPoints(m_matR, m_vecT, m_vecLandmarkCurrentBlendshape); }
+	VectorXd getCurrentBlendshapeTransformed() { return bfm_utils::TransPoints(m_matR, m_vecT, m_vecCurrentBlendshape); }
+	inline const Matrix<unsigned int, Dynamic, 1> &getTriangleList() const 	{ return m_vecTriangleList; }
 
 
 /*************************************************************************************************************/
@@ -227,7 +221,6 @@ public:
 /*************************************************************************************************************/
 
 
-#ifndef BFM_SHUT_UP
 	inline void check() const
 	{
 		BFM_DEBUG("check data\n");
@@ -259,7 +252,7 @@ public:
 		BFM_DEBUG("		Yours:   %lf\n", m_matExprPc(0, 0));
 		BFM_DEBUG("		Ref: -0.0028\n\n");
 		BFM_DEBUG("	(10) triangle list: \n");
-		BFM_DEBUG("		Yours:   %lf, %lf\n", m_vecTriangleList(0), m_vecTriangleList(1));
+		BFM_DEBUG("		Yours:   %u, %u\n", m_vecTriangleList(0), m_vecTriangleList(1));
 		BFM_DEBUG("		Ref: -0.0028\n\n");
 	}
 
@@ -304,23 +297,6 @@ public:
 	inline void printTVec() const { BFM_DEBUG("T: \n%s", bfm_utils::NumMat2Str(m_vecT).c_str()); }
 
 
-#else
-
-	inline void check() const { }
-	inline void printFpShapeMu() const { }
-	inline void printFpShapePc() const { }
-	inline void printShapeEv() const { }
-	inline void printExtParams() const { }
-	inline void printIntParams() const { }
-	inline void printShapeCoef() const { }
-	inline void printExprCoef() const { }
-	inline void printRMat() const { }
-	inline void printTVec() const { }
-
-
-#endif
-
-
 private:
 
 
@@ -334,8 +310,22 @@ private:
 
 
 	template<typename Derived>
-	Matrix<Derived, Dynamic, 1> coef2Object(const Derived *const &aCoef, 
-		const VectorXd &vecMu, const MatrixXd &matPc, const VectorXd &vecEv, unsigned int nLength) const;
+	Matrix<Derived, Dynamic, 1> coef2Object(const Derived *const aCoef, 
+		const VectorXd &vecMu, const MatrixXd &matPc, const VectorXd &vecEv, unsigned int nLength) const
+	{
+		assert(aCoef != nullptr);
+		assert(nLength >= 0);
+
+		Matrix<Derived, Dynamic, 1> tmpCoef(nLength);
+		for(int i = 0; i < nLength; i++)
+			tmpCoef(i) = aCoef[i];
+
+		Matrix<Derived, Dynamic, 1> tmpMu = vecMu.cast<Derived>();
+		Matrix<Derived, Dynamic, 1> tmpEv = vecEv.cast<Derived>();
+		Matrix<Derived, Dynamic, Dynamic> tmpPc = matPc.cast<Derived>();
+		return tmpMu + tmpPc * tmpCoef.cwiseProduct(tmpEv);
+	}
+
 
 	std::string m_strModelPath;
 	std::string m_strLandmarkIdxPath;
@@ -379,7 +369,7 @@ private:
 	VectorXd m_vecExprEv;
 	MatrixXd m_matExprPc;
 
-	VectorXd m_vecTriangleList;	/* triangle list */
+	Matrix<unsigned int, Dynamic, 1> m_vecTriangleList;	/* triangle list */
 
 	VectorXd m_vecCurrentShape;
 	VectorXd m_vecCurrentTex;
@@ -393,9 +383,14 @@ private:
 	MatrixXd m_matLandmarkShapePc;
 	VectorXd m_vecLandmarkExprMu;
 	MatrixXd m_matLandmarkExprPc;
-	VectorXd fp_current_shape_;
-	VectorXd fp_current_expr_;
-	VectorXd fp_current_blendshape_;
+	VectorXd m_vecLandmarkCurrentShape;
+	VectorXd m_vecLandmarkCurrentExpr;
+	VectorXd m_vecLandmarkCurrentBlendshape;
+
+public:
+
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 };
 
 

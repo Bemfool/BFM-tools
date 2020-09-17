@@ -7,6 +7,7 @@ if(UNIX)
 endif()
 
 add_library(bfm_manager SHARED src/bfm_manager.cpp)
+target_compile_features(bfm_manager PRIVATE cxx_std_17)
 
 ###############################################################################################
 ######################################## Dedendency ###########################################
@@ -19,7 +20,7 @@ endif()
 
 # Hdf5
 find_package(HDF5 REQUIRED C CXX)
-target_include_directories(bfm_manager PUBLIC ${HDF5_INCLUDE_DIRS})
+include_directories(${HDF5_INCLUDE_DIRS})
 
 # OpenCV
 set(OpenCV_DIR "/usr/local/opencv3/share/OpenCV")   

@@ -2,6 +2,7 @@
 #define TRANSFORM_HPP
 #define _USE_MATH_DEFINES
 #include <cmath>
+#include <fstream>
 #include <opencv2/opencv.hpp> 
 #include <Eigen/Dense>
 
@@ -128,68 +129,32 @@ namespace bfm_utils {
 	}
 
 
-	/* 
-	* Function: points2homogeneous
-	* Usage: dlib::matrix<T> quaternion_points = points2homogeneous(ternary_points);
-	* Parameters:
-	* 		@ternary_points: Point matrix whose size is (n_vertice, 3).
-	* Return:
-	* 		Point matrix whose size is (4, n_vertice).
-	* 		$Qmat = [Tmat | 1] ^ T$
-	* ----------------------------------------------------------------------------------------------------------------
-	* Transform a ternary point vector into quaternion vector. Detailed steps are as follows:
-	* 1) Add ones matrix in last column;
-	* 2) Transpose;
-	* 
-	*/
-
-	// template<typename _Tp> inline
-	// dlib::matrix<_Tp> points2homogeneous(const dlib::matrix<_Tp> &ternary_points)
-	// {
-	// 	dlib::matrix<_Tp> quaternion_points;
-	// 	quaternion_points.set_size(ternary_points.nr(), 4);
-	// 	dlib::set_subm(quaternion_points, dlib::range(0, ternary_points.nr()-1), dlib::range(0, 2)) = ternary_points;
-	// 	dlib::set_colm(quaternion_points, 3) = (_Tp)1.0;
-	// 	return dlib::trans(quaternion_points);
-	// }
-
-
 	template<typename _Tp, typename _Ep>
 	Matrix<_Tp, Dynamic, 1> TransPoints(
-		const Matrix<_Tp, 3, 3> &r_mat, 
-		const Matrix<_Tp, 3, 1> &t_vec, 
-		const Matrix<_Ep, Dynamic, 1> &points) 
+		const Matrix<_Tp, 3, 3> &matR, 
+		const Matrix<_Tp, 3, 1> &vecT, 
+		const Matrix<_Ep, Dynamic, 1> &vecPoints) 
 	{
-		Matrix<_Tp, 3, 4> trans_mat;
-		trans_mat << r_mat, t_vec;
-		
-		Matrix<_Tp, Dynamic, Dynamic> before_points = points.template cast<_Tp>();
-		Map<Matrix<_Tp, Dynamic, Dynamic>> after_points(before_points.data(), points.rows() / 3, 3);
-		after_points = trans_mat * after_points.rowwise().homogeneous().transpose();
-
-		return Map<Matrix<_Tp, Dynamic, 1>>(after_points.transpose().data(), points.rows(), 1);
+		Matrix<_Tp, 3, 4> matTrans;
+		matTrans << matR, vecT;
+		Matrix<_Tp, Dynamic, 1> vecPointsTypeTurned = vecPoints.template cast<_Tp>();
+		Map<Matrix<_Tp, Dynamic, 3, Eigen::RowMajor>> matPoints(vecPointsTypeTurned.data(), vecPointsTypeTurned.rows() / 3, 3);
+		Matrix<_Tp, 4, Dynamic> matPointsTransposed = matPoints.rowwise().homogeneous().transpose();
+		// Matrix<_Tp, 3, Dynamic> matPointsTransformed = matTrans * (matPoints.rowwise().homogeneous().transpose()); // Stuck!
+		Matrix<_Tp, 3, Dynamic> matPointsTransformed = matTrans * matPointsTransposed;
+		return Map<Matrix<_Tp, Dynamic, 1>>(matPointsTransformed.transpose().data(), vecPoints.rows(), 1);
 	}
 
 
-	// template<typename _Tp, typename _Ep>
-	// dlib::matrix<_Tp> transform_points(const _Tp * const ext_parm, const dlib::matrix<_Ep> &points, 
-	// 								bool is_linearized = false) 
-	// {
-	// 	dlib::matrix<_Tp, 3, 3> R;
-	// 	dlib::matrix<_Tp, 3 ,1> T;
-
-	// 	const _Tp &yaw   = ext_parm[0];
-	// 	const _Tp &pitch = ext_parm[1];
-	// 	const _Tp &roll  = ext_parm[2];
-	// 	const _Tp &tx    = ext_parm[3];
-	// 	const _Tp &ty    = ext_parm[4];
-	// 	const _Tp &tz    = ext_parm[5];
-		
-	// 	R = euler2matrix(yaw, pitch, roll, is_linearized);
-	// 	T = tx, ty, tz;
-	// 	return transform_points(R, T, points);
-	// }
-
+	template<typename _Tp, typename _Ep>
+	Matrix<_Tp, Dynamic, 1> TransPoints(const _Tp * const aExtParams, const Matrix<_Ep, Dynamic, 1> &vecPoints, bool bIsLinearized = false)
+	{
+		Matrix<_Tp, 3, 3> matR;
+		Matrix<_Tp, 3, 1> vecT;
+		matR = bfm_utils::Euler2Mat(aExtParams[0], aExtParams[1], aExtParams[2], bIsLinearized);
+		vecT << aExtParams[3], aExtParams[4], aExtParams[5];
+		return bfm_utils::TransPoints(matR, vecT, vecPoints);
+	}
 
 
 
@@ -221,41 +186,40 @@ namespace bfm_utils {
 	{
 		Matrix3d dif = r_mat * r_mat.transpose() - Matrix3d::Identity();
 		return (dif.norm() < 1e-6);
-		// return dlib::sum(dlib::abs(m)) / (m.nr() * m.nc());
 	}
 
 
-	inline void SatisfyExtMat(Matrix3d &r_mat, Vector3d &t_vec)
+	void SatisfyExtMat(Ref<Matrix3d> matR, Ref<Vector3d> vecT)
 	{
-		CvMat *cv_trans_mat, *cv_r_mat, *cv_t_vec;
-		Matrix<double, 3, 4> trans_mat;
-		trans_mat << r_mat, t_vec;
+		CvMat *cvMatTrans, *cvMatR, *cvMatT;
+		Matrix<double, 3, 4> matTrans;
+		matTrans << matR, vecT;
 
-		cv_trans_mat = cvCreateMat(3, 4, CV_64FC1);
-		bfm_utils::EigenMat2CvMat(trans_mat, cv_trans_mat);
+		cvMatTrans = cvCreateMat(3, 4, CV_64FC1);
+		bfm_utils::EigenMat2CvMat(matTrans, cvMatTrans);
 		
-		cv_r_mat = cvCreateMatHeader(3, 3, CV_64FC1);
-		cvGetCols(cv_trans_mat, cv_r_mat, 0, 3);
-		cv_t_vec = cvCreateMatHeader(3, 1, CV_64FC1);
-		cvGetCol(cv_trans_mat, cv_t_vec, 3);
+		cvMatR = cvCreateMatHeader(3, 3, CV_64FC1);
+		cvGetCols(cvMatTrans, cvMatR, 0, 3);
+		cvMatT = cvCreateMatHeader(3, 1, CV_64FC1);
+		cvGetCol(cvMatTrans, cvMatT, 3);
 
-		if( cvDet(cv_r_mat) < 0)
-			cvScale(cv_trans_mat, cv_trans_mat, -1);
-		double sc = cvNorm(cv_r_mat);
+		if( cvDet(cvMatR) < 0)
+			cvScale(cvMatTrans, cvMatTrans, -1);
+		double sc = cvNorm(cvMatR);
 		CV_Assert(fabs(sc) > DBL_EPSILON);
 
 		double u[9], v[9], w[3];
-		CvMat u_mat = cvMat(3, 3, CV_64F, u);
-		CvMat v_mat = cvMat(3, 3, CV_64F, v);
-		CvMat w_mat = cvMat(3, 1, CV_64F, w);
+		CvMat cvMatU = cvMat(3, 3, CV_64F, u);
+		CvMat cvMatV = cvMat(3, 3, CV_64F, v);
+		CvMat cvMatW = cvMat(3, 1, CV_64F, w);
 
-		cvSVD(cv_r_mat, &w_mat, &u_mat, &v_mat, CV_SVD_MODIFY_A + CV_SVD_U_T + CV_SVD_V_T);
-		cvGEMM(&u_mat, &v_mat, 1, 0, 0, cv_r_mat, CV_GEMM_A_T);
+		cvSVD(cvMatR, &cvMatW, &cvMatU, &cvMatV, CV_SVD_MODIFY_A + CV_SVD_U_T + CV_SVD_V_T);
+		cvGEMM(&cvMatU, &cvMatV, 1, 0, 0, cvMatR, CV_GEMM_A_T);
 
-		cvScale(cv_t_vec, cv_t_vec, cvNorm(cv_r_mat)/sc);
+		cvScale(cvMatT, cvMatT, cvNorm(cvMatR) / sc);
 
-		CvMat2EigenMat(cv_r_mat, r_mat);
-		CvMat2EigenMat(cv_t_vec, t_vec);
+		CvMat2EigenMat(cvMatR, matR);
+		CvMat2EigenMat(cvMatT, vecT);
 	}
 }
 
