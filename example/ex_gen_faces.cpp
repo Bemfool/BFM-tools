@@ -53,10 +53,10 @@ int main(int argc, char *argv[])
 	);
 
 	modelManager->genAvgFace();
-	modelManager->writePly("avg_face.ply", NONE_MODE);
+	modelManager->writePly("avg_face.ply", ModelWriteMode_None);
 
 	modelManager->genRndFace(1.0);
-	modelManager->writePly("rnd_face.ply", NONE_MODE);
+	modelManager->writePly("rnd_face.ply", ModelWriteMode_None);
 
 	return 0;
 }
