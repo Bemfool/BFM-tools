@@ -1,5 +1,6 @@
 ﻿#include "bfm_manager.h"
 
+
 BaselFaceModelManager::BaselFaceModelManager(
 	std::string strModelPath,
 	unsigned int nVertices,
@@ -44,10 +45,18 @@ BaselFaceModelManager::BaselFaceModelManager(
 
 	this->alloc();
 	this->load();
+	
+	unsigned int iTex = 0;
+	while(m_bIsTexStd)
+	{
+		if(m_vecTexMu(iTex++) > 1.0)
+			m_bIsTexStd = false;
+	}
+
 	if(m_bUseLandmark)
 	{
 		this->extractLandmarks();
-		this->genLandmarkFace();
+		this->genLandmarkBlendshape();
 	}
 	this->genAvgFace();
 }
@@ -171,31 +180,22 @@ void BaselFaceModelManager::extractLandmarks()
 }
 
 
-
 void BaselFaceModelManager::genRndFace(double dScale) 
 {
-	BFM_DEBUG("init random numbers (using the same scale) - ");
-
+	BFM_DEBUG("[BFM_MANAGER] Generate random face (using the same scale)\n");
 	m_aShapeCoef = bfm_utils::randn(m_nIdPcs, dScale);
 	m_aTexCoef   = bfm_utils::randn(m_nIdPcs, dScale);
 	m_aExprCoef  = bfm_utils::randn(m_nExprPcs, dScale);
-
-	BFM_DEBUG("success\n");
-
 	this->genFace();
 }
 
 
-void BaselFaceModelManager::genRndFace(double shape_scale, double tex_scale, double expr_scale) 
+void BaselFaceModelManager::genRndFace(double dShapeScale, double dTexScale, double dExprScale) 
 {
-	BFM_DEBUG("init random numbers (using different scales) - ");
-
-	m_aShapeCoef = bfm_utils::randn(m_nIdPcs, shape_scale);
-	m_aTexCoef   = bfm_utils::randn(m_nIdPcs, tex_scale);
-	m_aExprCoef  = bfm_utils::randn(m_nExprPcs, expr_scale);
-
-	BFM_DEBUG("success\n");
-
+	BFM_DEBUG("[BFM_MANAGER] Generate random face (using different scales)\n");
+	m_aShapeCoef = bfm_utils::randn(m_nIdPcs, dShapeScale);
+	m_aTexCoef   = bfm_utils::randn(m_nIdPcs, dTexScale);
+	m_aExprCoef  = bfm_utils::randn(m_nExprPcs, dExprScale);
 	this->genFace();
 }
 
@@ -213,7 +213,7 @@ void BaselFaceModelManager::genFace()
 }
 
 
-void BaselFaceModelManager::genLandmarkFace()  
+void BaselFaceModelManager::genLandmarkBlendshape()  
 {
 	BFM_DEBUG("[BFM_MANAGER] Generate landmarks with shape and expression coefficients -");
 
@@ -227,37 +227,26 @@ void BaselFaceModelManager::genLandmarkFace()
 
 void BaselFaceModelManager::genRMat() 
 {
-	BFM_DEBUG("generate rotation matrix - ");
-
-	// TODO:: yaw/pitch/roll regulation
-
-	const double &yaw   = m_aExtParams[0];
-	const double &pitch = m_aExtParams[1];
-	const double &roll  = m_aExtParams[2];
-	m_matR = bfm_utils::Euler2Mat(yaw, pitch, roll, false);
-
-	BFM_DEBUG("success\n");
+	BFM_DEBUG("[BFM_MANAGER] Generate rotation matrix.\n");
+	const double &roll   = m_aExtParams[0];
+	const double &yaw    = m_aExtParams[1];
+	const double &pitch  = m_aExtParams[2];
+	m_matR = bfm_utils::Euler2Mat(roll, yaw, pitch, false);
 }
 
 
 void BaselFaceModelManager::genTVec()
 {
-	BFM_DEBUG("generate translation vector - ");	
-
+	BFM_DEBUG("[BFM_MANAGER] Generate translation vector.\n");	
 	const double &tx = m_aExtParams[3];
 	const double &ty = m_aExtParams[4];
 	const double &tz = m_aExtParams[5];
 	m_vecT << tx, ty, tz;	
-
-	BFM_DEBUG("success\n");
-
-	this->printTVec();
 }
+
 
 void BaselFaceModelManager::genTransMat()
 {
-	BFM_DEBUG("generate transform matrix (rotation + translation):\n");
-
 	this->genRMat();
 	this->genTVec();
 }
@@ -297,7 +286,7 @@ void BaselFaceModelManager::genExtParams()
 }
 
 
-void BaselFaceModelManager::accExtParams(double *extParams) 
+void BaselFaceModelManager::accExtParams(double *aExtParams) 
 {
 	/* in every iteration, P = R`(RP+t)+t`, 
 	 * R_{new} = R`R_{old}
@@ -306,12 +295,12 @@ void BaselFaceModelManager::accExtParams(double *extParams)
 
 	Matrix3d matR;
 	Vector3d vecT;	
-	double dYaw   = extParams[0];
-	double dPitch = extParams[1];
-	double dRoll  = extParams[2];
-	double dTx = extParams[3];
-	double dTy = extParams[4];
-	double dTz = extParams[5];
+	double dYaw   = aExtParams[0];
+	double dPitch = aExtParams[1];
+	double dRoll  = aExtParams[2];
+	double dTx = aExtParams[3];
+	double dTy = aExtParams[4];
+	double dTz = aExtParams[5];
 
 	/* accumulate rotation */
 	matR = bfm_utils::Euler2Mat(dYaw, dPitch, dRoll, true);
@@ -416,7 +405,7 @@ void BaselFaceModelManager::writePly(std::string fn, long mode) const
 }
 
 
-void BaselFaceModelManager::writeFpPly(std::string fn) const {
+void BaselFaceModelManager::writeLandmarkPly(std::string fn) const {
 	std::ofstream out;
 	/* Note: In Linux Cpp, we should use std::ios::BFM_OUT as flag, which is not necessary in Windows */
 	out.open(fn, std::ios::out | std::ios::binary);
@@ -453,7 +442,7 @@ void BaselFaceModelManager::writeFpPly(std::string fn) const {
 
 void BaselFaceModelManager::clrExtParams()
 {
-	std::fill(m_aExtParams, m_aExtParams + 6, 0.0);
+	std::fill(m_aExtParams, m_aExtParams + N_EXT_PARAMS, 0.0);
 	this->genTransMat();
 	this->genFace();
 }

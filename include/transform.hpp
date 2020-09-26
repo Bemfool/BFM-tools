@@ -1,10 +1,17 @@
+// This file is part of BFM Manager (https://github.com/Great-Keith/BFM-tools).
+
+
 #ifndef TRANSFORM_HPP
 #define TRANSFORM_HPP
+
+
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <fstream>
+
 #include <opencv2/opencv.hpp> 
 #include <Eigen/Dense>
+
 
 using Eigen::Matrix;
 using Eigen::MatrixBase;
@@ -15,6 +22,7 @@ using Eigen::VectorXd;
 using Eigen::Map;
 using Eigen::Dynamic;
 using Eigen::Ref;
+
 
 namespace bfm_utils {
 
@@ -69,63 +77,52 @@ namespace bfm_utils {
 
 
 	/* 
-	* Function: euler2matrix
-	* Usage: dlib::matrix<T> R = euler2matrix(yaw, pitch, roll, false);
-	* Parameters:
-	* 		@yaw: Euler angle (radian);
-	* 		@pitch: Euler angle (radian);
-	* 		@roll: Euler angle (radian);
-	* 		@is_linearized: Choose to use linearized Euler angle transform or not. If true, be sure yaw, pitch and roll
-	* 						keep small.
-	* Return:
+	 * @Function Euler2Mat
+	 * 		Transform Euler angle into rotation matrix.
+	 * @Usage
+	 * 		Matrix3d matR = Euler2Mat(dRoll, dYaw, dPitch, false);
+	 * @Parameters
+	 * 		yaw: Euler angle (radian);
+	 * 		pitch: Euler angle (radian);
+	 * 		roll: Euler angle (radian);
+	 * 		bIsLinearized: Choose to use linearized Euler angle transform or not. If true, be sure yaw, pitch and roll
+	 * 						keep small.
+	 * @Return
 	* 		Rotation matrix R.
 	* 		If linearized:
-	* 			R = [[1,      -yaw, pitch],
-	* 				 [yaw,    1,    -roll],
-	* 				 [-pitch, roll, 1    ]]
+	* 			R = [[1.0,  -roll, yaw  ],
+	* 				 [roll, 1.0,  -pitch],
+	* 				 [-yaw, pitch, 1.0  ]]
 	* 		Else
 	*			R = [[c2*c1, s3*s2*c1-c3*s1, c3*s2*c1+s3*s1],
 	*				 [c2*s1, s3*s2*s1+c3*c1, c3*s2*s1-s3*c1],
 	*				 [-s2,   s3*c2,          c3*c2         ]]; 
-	*			(c1=cos(yaw),   s1=sin(yaw))
-	*			(c2=cos(pitch), s2=sin(pitch))
-	*			(c3=cos(roll),  s3=sin(roll))
-	* ----------------------------------------------------------------------------------------------------------------
-	* Transform Euler angle into rotation matrix.
-	* 
+	*			(c1=cos(roll), s1=sin(roll))
+	*			(c2=cos(yaw), s2=sin(yaw))
+	*			(c3=cos(pitch), s3=sin(pitch))
 	*/
 
-	template<typename _Tp> inline 
-	Matrix<_Tp, 3, 3> Euler2Mat(const _Tp &yaw, const _Tp &pitch, const _Tp &roll, bool is_linearized = false)
+	template<typename _Tp>
+	Matrix<_Tp, 3, 3> Euler2Mat(const _Tp &roll, const _Tp &yaw, const _Tp &pitch, bool bIsLinearized = false)
 	{
 		// Z1Y2X3
-
-		/* yaw - phi */	
-		/* pitch - theta */		
-		/* roll - psi */
-		Matrix<_Tp, 3, 3> r_mat;
-		if(is_linearized)
+		Matrix<_Tp, 3, 3> matR;
+		if(bIsLinearized)
 		{
-			r_mat << _Tp(1.0), -yaw,     pitch,
-				     yaw,      _Tp(1.0), -roll,
-				     -pitch,   roll,     _Tp(1.0);
+			matR << _Tp(1.0), -roll,    yaw,
+				    roll,     _Tp(1.0), -pitch,
+				    -yaw,     pitch,    _Tp(1.0);
 		}
 		else
-		{
-			/* (Deprecated) Using angles. */ 
-			// _Tp c1 = cos(yaw   * _Tp(M_PI) / _Tp(180.0)), s1 = sin(yaw   * _Tp(M_PI) / _Tp(180.0));
-			// _Tp c2 = cos(pitch * _Tp(M_PI) / _Tp(180.0)), s2 = sin(pitch * _Tp(M_PI) / _Tp(180.0));
-			// _Tp c3 = cos(roll  * _Tp(M_PI) / _Tp(180.0)), s3 = sin(roll  * _Tp(M_PI) / _Tp(180.0));
-			
-			/* Using radians */
-			_Tp c1 = cos(yaw),   s1 = sin(yaw);
-			_Tp c2 = cos(pitch), s2 = sin(pitch);
-			_Tp c3 = cos(roll),  s3 = sin(roll);
-			r_mat << c2 * c1, s3 * s2 * c1 - c3 * s1, c3 * s2 * c1 + s3 * s1,
-				     c2 * s1, s3 * s2 * s1 + c3 * c1, c3 * s2 * s1 - s3 * c1,
-				     -s2,     s3 * c2,                c3 * c2; 
+		{			
+			_Tp c1 = cos(roll), s1 = sin(roll);
+			_Tp c2 = cos(yaw), s2 = sin(yaw);
+			_Tp c3 = cos(pitch), s3 = sin(pitch);
+			matR << c2 * c1, s3 * s2 * c1 - c3 * s1, c3 * s2 * c1 + s3 * s1,
+				    c2 * s1, s3 * s2 * s1 + c3 * c1, c3 * s2 * s1 - s3 * c1,
+				    -s2,     s3 * c2,                c3 * c2; 
 		}
-		return r_mat;
+		return matR;
 	}
 
 
@@ -158,27 +155,25 @@ namespace bfm_utils {
 
 
 
-	template<typename T>
-	void Trans(const double ext_parm[6], T &x, T &y, T &z) {
-		const double &yaw   = ext_parm[0];
-		const double &pitch = ext_parm[1];
-		const double &roll  = ext_parm[2];
-		const double &tx    = ext_parm[3];
-		const double &ty    = ext_parm[4];
-		const double &tz    = ext_parm[5];
+	template<typename _Tp>
+	void Trans(const double aExtParams[6], _Tp &x, _Tp &y, _Tp &z) {
+		const double &dRoll  = aExtParams[0];
+		const double &dYaw   = aExtParams[1];
+		const double &dPitch = aExtParams[2];
+		const double &dTx    = aExtParams[3];
+		const double &dTy    = aExtParams[4];
+		const double &dTz    = aExtParams[5];
 
-		/* yaw - phi */
-		double c1 = cos(yaw   * M_PI / 180.0), s1 = sin(yaw   * M_PI / 180.0);
-		/* pitch - theta */
-		double c2 = cos(pitch * M_PI / 180.0), s2 = sin(pitch * M_PI / 180.0);
-		/* roll - psi */
-		double c3 = cos(roll  * M_PI / 180.0), s3 = sin(roll  * M_PI / 180.0);
+		double c1 = cos(dRoll * M_PI / 180.0), s1 = sin(dRoll * M_PI / 180.0);
+		double c2 = cos(dYaw * M_PI / 180.0), s2 = sin(dYaw * M_PI / 180.0);
+		double c3 = cos(dPitch * M_PI / 180.0), s3 = sin(dPitch * M_PI / 180.0);
 
-		T X = x, Y = y, Z = z; 
+		_Tp beforeX = x, beforeY = y, beforeZ = z; 
 
-		x = ( c2 * c1) * X + (s3 * s2 * c1 - c3 * s1) * Y + (c3 * s2 * c1 + s3 * s1) * Z + tx;
-		y = ( c2 * s1) * X + (s3 * s2 * s1 + c3 * c1) * Y + (c3 * s2 * s1 - s3 * c1) * Z + ty;
-		z = (-s2     ) * X + (s3 * c2               ) * Y + (c3 * c2               ) * Z + tz; 
+		// Z1Y2X3
+		x = ( c2 * c1) * beforeX + (s3 * s2 * c1 - c3 * s1) * beforeY + (c3 * s2 * c1 + s3 * s1) * beforeZ + dTx;
+		y = ( c2 * s1) * beforeX + (s3 * s2 * s1 + c3 * c1) * beforeY + (c3 * s2 * s1 - s3 * c1) * beforeZ + dTy;
+		z = (-s2     ) * beforeX + (s3 * c2               ) * beforeY + (c3 * c2               ) * beforeZ + dTz; 
 	}
 
 
