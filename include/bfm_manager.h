@@ -406,8 +406,17 @@ public:
 	}
 
 
-	inline void printRMat() const { BFM_DEBUG("R: \n%s", bfm_utils::NumMat2Str(m_matR).c_str()); }
-	inline void printTVec() const { BFM_DEBUG("T: \n%s", bfm_utils::NumMat2Str(m_vecT).c_str()); }
+	void printRMat() const 
+	{ 
+		std::string s = bfm_utils::NumMat2Str(this->m_matR);
+		BFM_DEBUG("R: \n%s", s.c_str()); 
+	}
+
+
+	void printTVec() const 
+	{
+		BFM_DEBUG("T: \n%s", bfm_utils::NumMat2Str(m_vecT).c_str()); 
+	}
 
 
 private:

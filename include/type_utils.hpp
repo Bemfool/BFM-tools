@@ -90,7 +90,7 @@ namespace bfm_utils
 
 
 	template<typename _Tp>
-	std::string NumMat2Str(MatrixBase<_Tp> mat)
+	std::string NumMat2Str(const MatrixBase<_Tp>& mat)
 	{
 		std::string res = "";
 		for(unsigned int i = 0; i < mat.rows(); i++)
