@@ -74,7 +74,8 @@ namespace bfm_utils
 	template<class _Tp> inline
 	void PrintArr(_Tp *arr, int len)
 	{
-		for(unsigned int i = 0; i < len; i++) std::cout << arr[i] << " ";
+		for(unsigned int i = 0; i < len; i++) 
+			std::cout << arr[i] << " ";
 		std::cout << "\n";
 	}
 
@@ -89,7 +90,7 @@ namespace bfm_utils
 
 
 	template<typename _Tp>
-	std::string NumMat2Str(MatrixBase<_Tp> mat)
+	std::string NumMat2Str(const MatrixBase<_Tp>& mat)
 	{
 		std::string res = "";
 		for(unsigned int i = 0; i < mat.rows(); i++)

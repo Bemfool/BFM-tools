@@ -1,9 +1,32 @@
 #include "bfm_manager.h"
+
 #include <fstream>
 #include <iostream>
+#include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
+
+
+namespace fs = boost::filesystem;
+namespace po = boost::program_options;
+using namespace std;
+
+
+const std::string LOG_PATH = R"(./log)";
+
 
 int main(int argc, char *argv[])
 {
+    // logging
+    google::InitGoogleLogging(argv[0]); 
+    FLAGS_logtostderr = false;
+    if(fs::exists(LOG_PATH)) 
+        fs::remove_all(LOG_PATH);
+    fs::create_directory(LOG_PATH);
+    FLAGS_alsologtostderr = true;
+    FLAGS_log_dir = LOG_PATH;
+    FLAGS_log_prefix = true; 
+    FLAGS_colorlogtostderr =true;
+
 	std::ifstream in;
 	if(argc > 1)
 		in.open(argv[1], std::ios::in);
@@ -19,10 +42,6 @@ int main(int argc, char *argv[])
 	unsigned int nVertice, nFace, nIdPc, nExprPc;
 	std::string strIntParam;
 	double aIntParams[4] = { 0.0 };
-	std::string strShapeMuH5Path, strShapeEvH5Path, strShapePcH5Path;
-	std::string strTexMuH5Path, strTexEvH5Path, strTexPcH5Path;
-	std::string strExprMuH5Path, strExprEvH5Path, strExprPcH5Path;
-	std::string strTlH5Path;
 	unsigned int nFp;
 	std::string strFpIdxPath = "";
 	in >> strBfmH5Path;
@@ -32,31 +51,23 @@ int main(int argc, char *argv[])
 		in >> strIntParam;
 		aIntParams[i] = atof(strIntParam.c_str());
 	}
-	in >> strShapeMuH5Path >> strShapeEvH5Path >>strShapePcH5Path;
-	in >> strTexMuH5Path >> strTexEvH5Path >> strTexPcH5Path;
-	in >> strExprMuH5Path >> strExprEvH5Path >> strExprPcH5Path;
-	in >> strTlH5Path;
 	in >> nFp;
 	if(nFp != 0) in >> strFpIdxPath;
 	in.close();
 
 	BaselFaceModelManager *modelManager = new BaselFaceModelManager(
 		strBfmH5Path,
-		nVertice, nFace, nIdPc, nExprPc,
 		aIntParams,
-		strShapeMuH5Path, strShapeEvH5Path, strShapePcH5Path,
-		strTexMuH5Path, strTexEvH5Path, strTexPcH5Path,
-		strExprMuH5Path, strExprEvH5Path, strExprPcH5Path,
-		strTlH5Path,
 		nFp,
 		strFpIdxPath
 	);
 
 	modelManager->genAvgFace();
-	modelManager->writePly("avg_face.ply", NONE_MODE);
+	modelManager->writePly("avg_face.ply", ModelWriteMode_None);
 
 	modelManager->genRndFace(1.0);
-	modelManager->writePly("rnd_face.ply", NONE_MODE);
+	modelManager->writePly("rnd_face.ply", ModelWriteMode_None);
 
+	google::ShutdownGoogleLogging();
 	return 0;
 }

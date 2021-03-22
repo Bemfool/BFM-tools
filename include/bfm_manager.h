@@ -1,12 +1,23 @@
-﻿#ifndef BFM_MANAGER_H
+﻿// This file is part of BFM Manager (https://github.com/Great-Keith/BFM-tools).
+
+
+#ifndef BFM_MANAGER_H
 #define BFM_MANAGER_H
+
 
 #include "data.hpp"
 #include "random.hpp"
 #include "transform.hpp"
 #include "type_utils.hpp"
+
 #include <Eigen/Dense>
+#include <Eigen/StdVector>
+
 #include <opencv2/core/eigen.hpp>
+
+#include "glog/logging.h"
+
+#include <boost/filesystem.hpp>
 
 
 using Eigen::Matrix;
@@ -16,210 +27,291 @@ using Eigen::Vector3d;
 using Eigen::VectorXd;
 using Eigen::Dynamic;
 
+namespace fs = boost::filesystem;
+
+
+/*
+ * @Class BaselFaceModelManager
+ * 		This class manages related data of Basel Face Model, which may be from official download of personal
+ * custom. Users could use the class to read, write or draw face model.
+ */
 
 class BaselFaceModelManager {
 
 
 public:
 
+
 	/*
-	 * Constructor
-	 * ***********************************************************************************************
-	 * Parameters:
-	 * 		bfm_h5_path: H5 file storing Basel Face Model;
-	 * 		num_vertice: Vertice number;
-	 * 		num_face: Face number;
-	 * 		num_id_pc: Identity (shape and texture) principle component number;
-	 *		num_expr_pc: Expression princile component number;
-	 *		int_params: Camera intrinsic parameters, array of four double number (fx, fy, cx, cy); 
-	 *		shape_mu_h5_path: H5 database path of average shape;
-	 *		shape_ev_h5_path: H5 database path of shape variance;
-	 *		shape_pc_h5_path: H5 database path of shape princile component basis;
-	 *	    tex_mu_h5_path: H5 database path of average texture;
-	 *		tex_ev_h5_path: H5 database path of texture variance;
-	 *		tex_pc_h5_path: H5 database path of texture princile component basis;
-	 *	    expr_mu_h5_path: H5 database path of average expression;
-	 *		expr_ev_h5_path: H5 database path of expression variance;
-	 *		expr_pc_h5_path: H5 database path of expression princile component basis;
-	 *		tl_h5_path: H5 database path of triangle list;
-	 *		num_fp: Landmark number. Setting = 0 means that landmarks are not needed;
-	 *		fp_idx_path: File path storing index of landmarks.
-	 * ***********************************************************************************************
-	 * Note:
-	 * 		Input details see examples in README.md.
+	 * @Function Constructor
+	 * @Parameters
+	 * 		strModelPath: H5 file storing Basel Face Model;
+	 * 		nVertices: Vertice number;
+	 * 		nFaces: Face number;
+	 * 		nIdPcs: Identity (shape and texture) principle component number;
+	 *		nExprPcs: Expression princile component number;
+	 *		aIntParams: Camera intrinsic parameters, array of four double number (fx, fy, cx, cy); 
+	 *		strShapeMuH5Path: H5 database path of average shape;
+	 *		strShapeEvH5Path: H5 database path of shape variance;
+	 *		strShapePcH5Path: H5 database path of shape princile component basis;
+	 *	    strTexMuH5Path: H5 database path of average texture;
+	 *		strTexEvH5Path: H5 database path of texture variance;
+	 *		strTexPcH5Path: H5 database path of texture princile component basis;
+	 *	    strExprMuH5Path: H5 database path of average expression;
+	 *		strExprEvH5Path: H5 database path of expression variance;
+	 *		strExprPcH5Path: H5 database path of expression princile component basis;
+	 *		strTriangleListH5Path: H5 database path of triangle list;
+	 *		nLandmarks: Landmark number. Setting = 0 means that landmarks are not needed;
+	 *		strLandmarkIdxPath: File path storing index of landmarks.
 	 */
 	
-	BaselFaceModelManager() {}
+	BaselFaceModelManager() = default;
 	BaselFaceModelManager(
 		std::string strModelPath,
-		unsigned int nVertices,
-		unsigned int nFaces,
-		unsigned int nIdPcs,
-		unsigned int nExprPcs,
 		double *aIntParams, 
-		std::string strShapeMuH5Path,
-		std::string strShapeEvH5Path,
-		std::string strShapePcH5Path,
-		std::string strTexMuH5Path,
-		std::string strTexEvH5Path,
-		std::string strTexPcH5Path,
-		std::string strExprMuH5Path,
-		std::string strExprEvH5Path,
-		std::string strExprPcH5Path,
-		std::string strTriangleListH5Path,
 		unsigned int nLandmarks = 0,
 		std::string strLandmarkIdxPath = "");
 
 
 	/*
-	 *
+	 * @Function genRndFace
+	 * 		Generate random face.
+	 * @Usage
+	 * 		bfmManager.genRndFace(1.0);
+	 * 		bfmManager.genRndFace(1.0, 1.0, 1.0);
+	 * @Parameters
+	 * 		dScale: Scale for shape, texture and expression (default is 0.0);
+	 * 		dShapeScale: Scale for shape;
+	 * 		dTexScale: Scale for texture;
+	 * 		dExprScale: Scale for expression.
 	 */
 
-	void genRndFace(double scale = 0.0);
+	void genRndFace(double dScale = 0.0);
+	void genRndFace(double dShapeScale, double dTexScale, double dExprScale);
 
 
-	void genRndFace(double shape_scale, double tex_scale, double expr_scale);
-
+	/*
+	 * @Function genAvgFace
+	 * 		Generate average face. Actually call genRndFace function.
+	 * @Usage
+	 * 		bfmManager.genAvgFace();
+	 */ 
 
 	void genAvgFace() { this->genRndFace(0.0); }
 
 
+	/*
+	 * @Function genFace
+	 * 		Generate current face model using current coefficients. The result is saved in current 
+	 * shape/tex/expression variables.
+	 * @Usage
+	 * 		bfmManager.genFace();
+	 */
+
 	void genFace();
 
 
-	void genFpFace();
+	/* 
+	 * @Function genLandmarkBlendshape
+	 * 		Generate current landmark face model using current coefficients. The result is saved in 
+	 * current landmark shape/tex/expression variables.
+	 * @Usage
+	 * 		bfmManager.genLandmarkBlendshape();
+	 * 		VectorXd vecLandmarkBlendshape = BfmManager.genLandmarkBlendshape(aShapeCoef, aExprCoef);
+	 * @Parameters
+	 * 		aShapeCoef: array of shape coefficients;
+	 * 		aExprCoef: array of expression coefficients.
+	 * @Return:
+	 * 		Landmark blendshape generated by shape and expression coefficients.
+	 */
 
-
-	template<typename Derived>
-	Matrix<Derived, Dynamic, Dynamic> genFpFace(const Derived* const shapeCoef,const Derived* const exprCoef) const 
+	void genLandmarkBlendshape();
+	template<typename _Tp>
+	Matrix<_Tp, Dynamic, 1> genLandmarkBlendshape(const _Tp* const aShapeCoef,const _Tp* const aExprCoef) const 
 	{
-		Matrix<Derived, Dynamic, Dynamic> fp_current_shape = coef2Object(shapeCoef, m_vecLandmarkShapeMu, m_matLandmarkShapePc, m_vecShapeEv, m_nIdPcs);
-		Matrix<Derived, Dynamic, Dynamic> fp_current_expr = coef2Object(exprCoef, m_vecLandmarkExprMu, m_matLandmarkExprPc, m_vecExprEv, m_nExprPcs);
-		Matrix<Derived, Dynamic, Dynamic> fp_current_blendshape = fp_current_shape + fp_current_expr;	
-		return fp_current_blendshape_;
+		return this->coef2Object(aShapeCoef, m_vecLandmarkShapeMu, m_matLandmarkShapePc, m_vecShapeEv, m_nIdPcs) +
+			this->coef2Object(aExprCoef, m_vecLandmarkExprMu, m_matLandmarkExprPc, m_vecExprEv, m_nExprPcs);
 	}
 
 
-	template<typename T>
-	Matrix<T, Dynamic, Dynamic> genFpFaceByShape(const T * const shape_coef) const 
+	/*
+     * @Function genLandmarkBlendshapeByShape
+	 * @Function genLandmarkBlendshapeByExpr
+	 * 		Generate landmark blendshape by shape or expression.
+	 * @Usage
+	 * 		VectorXd vecLandmarkBlendshape0 = BfmManager.genLandmarkBlendshapeByShape(aShapeCoef);
+	 * 		VectorXd vecLandmarkBlendshape1 = BfmManager.genLandmarkBlendshapeByExpr(aExprCoef);
+	 * @Parameters
+	 * 		aShapeCoef: array of shape coefficients;
+	 * 		aExprCoef: array of expression coefficients.
+     */
+
+	template<typename _Tp>
+	Matrix<_Tp, Dynamic, 1> genLandmarkBlendshapeByShape(const _Tp * const aShapeCoef) const 
 	{
-		Matrix<T, Dynamic, Dynamic> fp_current_shape = coef2object(shape_coef, m_vecLandmarkShapeMu, m_matLandmarkShapePc, m_vecShapeEv, m_nIdPcs);
-		Matrix<T, Dynamic, Dynamic> fp_current_expr = fp_current_expr_.template cast<T>();
-		Matrix<T, Dynamic, Dynamic> fp_current_blendshape = fp_current_shape + fp_current_expr;	
-		return fp_current_blendshape;		
+		return this->coef2Object(aShapeCoef, m_vecLandmarkShapeMu, m_matLandmarkShapePc, m_vecShapeEv, m_nIdPcs) +
+			m_vecLandmarkCurrentExpr.template cast<_Tp>();
+	}
+	template<typename _Tp>
+	Matrix<_Tp, Dynamic, 1> genLandmarkBlendshapeByExpr(const _Tp * const aExprCoef) const 
+	{
+		return m_vecLandmarkCurrentShape.template cast<_Tp>() + 
+			this->coef2Object(aExprCoef, m_vecLandmarkExprMu, m_matLandmarkExprPc, m_vecExprEv, m_nExprPcs);
 	}
 
 
-	template<typename T>
-	Matrix<T, Dynamic, Dynamic> genFpFaceByExpr(const T * const expr_coef) const 
-	{
-		Matrix<T, Dynamic, Dynamic> fp_current_shape = fp_current_shape.template cast<T>();
-		Matrix<T, Dynamic, Dynamic> fp_current_expr = coef2Object(expr_coef, m_vecLandmarkExprMu, m_matLandmarkExprPc, m_vecExprEv, m_nExprPcs);
-		Matrix<T, Dynamic, Dynamic> fp_current_blendshape = fp_current_shape + fp_current_expr;	
-		return fp_current_blendshape;		
-	}
-
+	/*
+	 * @Function genTransMat
+	 * @Function genRMat
+	 * @Function genTVec
+	 * 		Generate rotation matrix and/or translate vector.
+	 * @Usage
+	 * 		bfmManager.genTransMat();
+	 * 		bfmManager.genRMat();
+	 * 		bfmManager.genTVec();
+	 */
 
 	void genTransMat();
-
-
 	void genRMat();
-
-
 	void genTVec();
 
+
+	/*
+	 * @Function genExtParams
+	 * 		Generate extrinsic parameters from rotation mat and translation vector.
+	 * @Usage
+	 * 		bfmManager.genExtParams();
+	 */
 
 	void genExtParams();
 
 
-	void accExtParams(double *x);
+	/* 
+	 * @Function accExtParams
+	 * 		Accumulate extrinsic parameters. Actually we accumulate rotation matrix and translation
+	 * vector. Hence, after whole accumulation, you should call `genExtParams` by yourselves to make
+	 * sure that transform matrix is be updated with extrinsic paramters.
+	 * @Usage
+	 * 		aExtParams: array of extrinsic parameters.
+	 * @Note
+	 * 		TODO: Maybe we could use a flag to show which data have been writen and not updated.
+	 */
+
+	void accExtParams(double *aExtParams);
 
 
-	void writePly(std::string fn = "face.ply", model_write_mode mode = NONE_MODE) const;
+	/* @Function writePly
+	 * @Function writeLandmarkPly
+	 * 		Write face model or landmark into .ply format file.
+	 * @Usage
+	 * 		bfmManager.writePly();
+	 * 		bfmManager.writeLandmarkPly("landmarks.ply");
+	 * @Parameters
+	 * 		fn: filename to be written;
+	 * 		mode:
+	 * 			ModelWriteMode_Invalid: Invalid;
+	 *			ModelWriteMode_None: Common mode, draw face model;
+	 *			ModelWriteMode_PickLandmark: Pick landmarks in face;
+	 *			ModelWriteMode_CameraCoord: Transform using extrinsic parameters;
+	 *			ModelWriteMode_NoExpr: Don't use expression.
+	 * @Note
+	 * 		Users could use `&` to combine different modes. 
+	 */
 
-
-	void writeFpPly(std::string fn = "fp_face.ply") const;
+	void writePly(std::string fn = "face.ply", long mode = ModelWriteMode_None) const;
+	void writeLandmarkPly(std::string fn = "landmarks.ply") const;
 
 	
+	/*
+	 * @Function clrExtParams
+	 * 		Clear extrinsic parameters (set to 0).
+	 * @Usage
+	 * 		bfmManager.clrExtParams();
+	 */
+
 	void clrExtParams();
 
 
 /*************************************************************************************************************/
-/***************************************** Set & Get Function ************************************************/
+/***************************************** Set & Get Functions ***********************************************/
 /*************************************************************************************************************/
 
 
-	inline const unsigned int get_num_id_pc_() const { return m_nIdPcs; }
-	inline const unsigned int get_num_expr_pc() const { return m_nExprPcs; }
-	inline const unsigned int get_num_face_() const { return m_nFaces; }
-	inline const unsigned int get_num_vertice_() const { return m_nVertices; }
-	inline const unsigned int get_num_fp() const { return m_nLandmarks; }
+	inline const unsigned int getNIdPcs() const { return m_nIdPcs; }
+	inline const unsigned int getNExprPcs() const { return m_nExprPcs; }
+	inline const unsigned int getNFaces() const { return m_nFaces; }
+	inline const unsigned int getNVertices() const { return m_nVertices; }
+	inline const unsigned int getNLandmarks() const { return m_nLandmarks; }
 	
-	inline double *get_mutable_shape_coef() { return m_aShapeCoef; }
-	inline double *get_mutable_tex_coef() { return m_aTexCoef; }
-	inline double *get_mutable_expr_coef() { return m_aExprCoef; }
-	inline double *get_mutable_ext_params() { return m_aExtParams; }
-	inline double *get_mutable_int_params() { return m_aIntParams; }
-	inline const double *get_ext_params() const { return m_aExtParams; }
-	inline const double *get_int_params() const { return m_aIntParams; }
+	inline double *getMutableShapeCoef() { return m_aShapeCoef; }
+	inline double *getMutableTexCoef() { return m_aTexCoef; }
+	inline double *getMutableExprCoef() { return m_aExprCoef; }
+	inline double *getMutableExtParams() { return m_aExtParams; }
+	inline double *getMutableIntParams() { return m_aIntParams; }
+	inline double& getMutableScale() { return m_scale; }
+	inline const double *getExtParams() const { return m_aExtParams; }
+	inline const double *getIntParams() const { return m_aIntParams; }
 
-	inline const Matrix3d get_r_mat() const { return m_matR; }
-	inline const Vector3d get_t_vec() const { return m_vecT; }
+	inline const Matrix3d &getMatR() const { return m_matR; }
+	inline const Vector3d &getVecT() const { return m_vecT; }
 
-	inline const double get_fx() const { return m_aIntParams[0]; }
-	inline const double get_fy() const { return m_aIntParams[1]; }
-	inline const double get_cx() const { return m_aIntParams[2]; }
-	inline const double get_cy() const { return m_aIntParams[3]; }
-	inline const double get_yaw() const { return m_aExtParams[0]; }
-	inline const double get_pitch() const { return m_aExtParams[1]; }
-	inline const double get_roll() const { return m_aExtParams[2]; }
-	inline const double get_tx() const { return m_aExtParams[3]; }
-	inline const double get_ty() const { return m_aExtParams[4]; }
-	inline const double get_tz() const { return m_aExtParams[5]; }
-	inline void set_yaw(double yaw)     { m_aExtParams[0] = yaw;   genRMat();}
-	inline void set_pitch(double pitch) { m_aExtParams[1] = pitch; genRMat();}
-	inline void set_roll(double roll)   { m_aExtParams[2] = roll;  genRMat();}
-	inline void set_rotation(double yaw, double pitch, double roll) 
+	inline const double getFx() const { return m_aIntParams[0]; }
+	inline const double getFy() const { return m_aIntParams[1]; }
+	inline const double getCx() const { return m_aIntParams[2]; }
+	inline const double getCy() const { return m_aIntParams[3]; }
+	inline const double getRoll() const { return m_aExtParams[0]; }
+	inline const double getYaw() const { return m_aExtParams[1]; }
+	inline const double getPitch() const { return m_aExtParams[2]; }
+	inline const double getTx() const { return m_aExtParams[3]; }
+	inline const double getTy() const { return m_aExtParams[4]; }
+	inline const double getTz() const { return m_aExtParams[5]; }
+	void setRoll(double dRoll)   { m_aExtParams[0] = dRoll;  this->genRMat();}
+	void setYaw(double dYaw)     { m_aExtParams[1] = dYaw;   this->genRMat();}
+	void setPitch(double dPitch) { m_aExtParams[2] = dPitch; this->genRMat();}
+	void setRotation(double dRoll, double dYaw, double dPitch) 
 	{
-		set_yaw(yaw); 
-		set_pitch(pitch); 
-		set_roll(roll);
+		m_aExtParams[0] = dRoll;
+		m_aExtParams[1] = dYaw;
+		m_aExtParams[2] = dPitch; 
+		this->genRMat();
 	}
-	inline void set_tx(double tx) { m_aExtParams[3] = tx; m_vecT(0) = tx; }
-	inline void set_ty(double ty) { m_aExtParams[4] = ty; m_vecT(1) = ty; }
-	inline void set_tz(double tz) { m_aExtParams[5] = tz; m_vecT(2) = tz; }
-	inline void set_r_mat(const Matrix3d &r_mat) { m_matR = r_mat; }
-	inline void set_r_mat(const cv::Mat &r_mat) { cv::cv2eigen(r_mat, m_matR); }
-	inline void set_r_mat(CvMat *r_mat)
+	inline void setTx(double tx) { m_aExtParams[3] = tx; m_vecT(0) = tx; }
+	inline void setTy(double ty) { m_aExtParams[4] = ty; m_vecT(1) = ty; }
+	inline void setTz(double tz) { m_aExtParams[5] = tz; m_vecT(2) = tz; }
+	inline void setMatR(const Matrix3d &r_mat) { m_matR = r_mat; }
+	inline void setMatR(const cv::Mat &r_mat) { cv::cv2eigen(r_mat, m_matR); }
+	inline void setMatR(CvMat *r_mat)
 	{
 		m_matR(0, 0) = cvmGet(r_mat, 0, 0); m_matR(0, 1) = cvmGet(r_mat, 0, 1); m_matR(0, 2) = cvmGet(r_mat, 0, 2);
 		m_matR(1, 0) = cvmGet(r_mat, 1, 0); m_matR(1, 1) = cvmGet(r_mat, 1, 1); m_matR(1, 2) = cvmGet(r_mat, 1, 2);
 		m_matR(2, 0) = cvmGet(r_mat, 2, 0); m_matR(2, 1) = cvmGet(r_mat, 2, 1); m_matR(2, 2) = cvmGet(r_mat, 2, 2);		
 	}
-	inline void set_t_vec(const Vector3d &t_vec) { m_vecT = t_vec; }
-	inline void set_t_vec(const cv::Mat &t_vec) { cv::cv2eigen(t_vec, m_vecT); }
-	inline void set_t_vec(CvMat *t_vec)
+	inline void setVecT(const Vector3d &t_vec) { m_vecT = t_vec; }
+	inline void setVecT(const cv::Mat &t_vec) { cv::cv2eigen(t_vec, m_vecT); }
+	inline void setVecT(CvMat *t_vec)
 	{
 		m_vecT(0) = cvmGet(t_vec, 0, 0);
 		m_vecT(1) = cvmGet(t_vec, 1, 0);
 		m_vecT(2) = cvmGet(t_vec, 2, 0);		
 	}
 
-	inline const VectorXd &get_current_shape() const { return m_vecCurrentShape; }
-	inline const VectorXd &get_current_tex() const { return m_vecCurrentTex; }
-	inline VectorXd get_std_tex() const 
+	inline const VectorXd &getCurrentShape() const { return m_vecCurrentShape; }
+	inline const VectorXd &getCurrentTex() const { return m_vecCurrentTex; }
+	inline VectorXd getStdTex() const 
 	{
+		if(m_bIsTexStd)
+			return m_vecTexMu;
 		VectorXd res(m_nVertices * 3);
 		for(auto i = 0; i < res.size(); i++)
 			res(i) = m_vecTexMu(i) / 255.0;
 		return res;
 	} 
-	inline const VectorXd &get_current_expr() const { return m_vecCurrentExpr; }
-	inline const VectorXd &get_current_blendshape() const { return m_vecCurrentBlendshape; }
-	inline const VectorXd &get_fp_current_blendshape() const { return fp_current_blendshape_; }
-	VectorXd get_fp_current_blendshape_transformed() { return bfm_utils::TransPoints(m_matR, m_vecT, fp_current_blendshape_); }
-	VectorXd get_current_blendshape_transformed() { return bfm_utils::TransPoints(m_matR, m_vecT, m_vecCurrentBlendshape); }
-	inline const VectorXd &get_tl() const 	{ return m_vecTriangleList; }
+	inline const VectorXd &getCurrentExpr() const { return m_vecCurrentExpr; }
+	inline const VectorXd &getCurrentBlendshape() const { return m_vecCurrentBlendshape; }
+	inline const VectorXd &getLandmarkCurrentBlendshape() const { return m_vecLandmarkCurrentBlendshape; }
+	VectorXd getLandmarkCurrentBlendshapeTransformed() const { return bfm_utils::TransPoints(m_matR, m_vecT, m_vecLandmarkCurrentBlendshape); }
+	VectorXd getCurrentBlendshapeTransformed() const { return bfm_utils::TransPoints(m_matR, m_vecT, m_vecCurrentBlendshape); }
+	inline const Matrix<unsigned short, Dynamic, 1> &getTriangleList() const { return m_vecTriangleList; }
 
 
 /*************************************************************************************************************/
@@ -227,118 +319,171 @@ public:
 /*************************************************************************************************************/
 
 
-#ifndef BFM_SHUT_UP
+	/*
+	 * @Function check
+	 * 		Show your loaded data and reference data. Users could use thi 
+	 * function to check whether loading is successful.
+	 * @Usage
+	 * 		bfmManager.check();
+	 */
+
 	inline void check() const
 	{
-		BFM_DEBUG("check data\n");
-		BFM_DEBUG("	(1) shape mu: \n");
-		BFM_DEBUG("		Yours:   %lf\n", m_vecShapeMu(0));
-		BFM_DEBUG("		Ref: -57239 42966 80410\n\n");
-		BFM_DEBUG("	(2) shape ev: \n");
-		BFM_DEBUG("		Yours:   %lf, %lf\n", m_vecShapeEv(0), m_vecShapeEv(1));
-		BFM_DEBUG("		Ref: 884340 555880\n\n");
-		BFM_DEBUG("	(3) shape pc: \n");
-		BFM_DEBUG("		Yours:   %lf\n", m_matShapePc(0, 0));
-		BFM_DEBUG("		Ref: -0.0024\n\n");
-		BFM_DEBUG("	(4) texture mu: \n");
-		BFM_DEBUG("		Yours:   %lf\n", m_vecTexMu(0));
-		BFM_DEBUG("		Ref: 182.8750 135.0400 107.1400\n\n");
-		BFM_DEBUG("	(5) texture ev: \n");
-		BFM_DEBUG("		Yours:   %lf, %lf\n", m_vecTexEv(0), m_vecTexEv(1));
-		BFM_DEBUG("		Ref: 4103.2 2024.1\n\n");
-		BFM_DEBUG("	(6) texture pc: \n");
-		BFM_DEBUG("		Yours:   %lf\n", m_matTexPc(0, 0));
-		BFM_DEBUG("		Ref: -0.0028\n\n");
-		BFM_DEBUG("	(7) expression mu: \n");
-		BFM_DEBUG("		Yours:   %lf\n", m_vecExprMu(0));
-		BFM_DEBUG("		Ref: 182.8750 135.0400 107.1400\n\n");
-		BFM_DEBUG("	(8) expression ev: \n");
-		BFM_DEBUG("		Yours:   %lf, %lf\n", m_vecExprEv(0), m_vecExprEv(1));
-		BFM_DEBUG("		Ref: 4103.2 2024.1\n\n");
-		BFM_DEBUG("	(9) expression pc: \n");
-		BFM_DEBUG("		Yours:   %lf\n", m_matExprPc(0, 0));
-		BFM_DEBUG("		Ref: -0.0028\n\n");
-		BFM_DEBUG("	(10) triangle list: \n");
-		BFM_DEBUG("		Yours:   %lf, %lf\n", m_vecTriangleList(0), m_vecTriangleList(1));
-		BFM_DEBUG("		Ref: -0.0028\n\n");
+		BFM_DEBUG("[BFM_MANAGER] Check data\n");
+		BFM_DEBUG("	(1) Shape average:\n");
+		BFM_DEBUG("		Yours:\t%lf\n", m_vecShapeMu(0));
+		BFM_DEBUG("		Ref:\t-57239\t42966\t80410\n\n");
+		BFM_DEBUG("	(2) Shape variance: \n");
+		BFM_DEBUG("		Yours:\t%lf\t%lf\n", m_vecShapeEv(0), m_vecShapeEv(1));
+		BFM_DEBUG("		Ref:\t884340\t555880\n\n");
+		BFM_DEBUG("	(3) Shape principle component: \n");
+		BFM_DEBUG("		Yours:\t%lf\n", m_matShapePc(0, 0));
+		BFM_DEBUG("		Ref:\t-0.0024\n\n");
+		BFM_DEBUG("	(4) Texture average: \n");
+		BFM_DEBUG("		Yours:\t%lf\n", m_vecTexMu(0));
+		BFM_DEBUG("		Ref:\t182.8750\t135.0400\t107.1400\n\n");
+		BFM_DEBUG("	(5) Texture variance: \n");
+		BFM_DEBUG("		Yours:\t%lf\t%lf\n", m_vecTexEv(0), m_vecTexEv(1));
+		BFM_DEBUG("		Ref:\t4103.2\t2024.1\n\n");
+		BFM_DEBUG("	(6) Texture principle component: \n");
+		BFM_DEBUG("		Yours:\t%lf\n", m_matTexPc(0, 0));
+		BFM_DEBUG("		Ref:\t-0.0028\n\n");
+		BFM_DEBUG("	(7) Expression average: \n");
+		BFM_DEBUG("		Yours:\t%lf\n", m_vecExprMu(0));
+		BFM_DEBUG("		Ref:\t182.8750\t135.0400\t107.1400\n\n");
+		BFM_DEBUG("	(8) Expression variance: \n");
+		BFM_DEBUG("		Yours:\t%lf\t%lf\n", m_vecExprEv(0), m_vecExprEv(1));
+		BFM_DEBUG("		Ref:\t4103.2\t2024.1\n\n");
+		BFM_DEBUG("	(9) Expression principle component: \n");
+		BFM_DEBUG("		Yours:\t%lf\n", m_matExprPc(0, 0));
+		BFM_DEBUG("		Ref:\t-0.0028\n\n");
+		BFM_DEBUG("	(10) Triangle list: \n");
+		BFM_DEBUG("		Yours:\t%u\t%u\n", m_vecTriangleList(0), m_vecTriangleList(1));
+		BFM_DEBUG("		Ref:\t-0.0028\n\n");
 	}
 
-	void printFpShapeMu() const { BFM_DEBUG("fp - shape mu: \n%s", bfm_utils::NumMat2Str(m_vecLandmarkShapeMu).c_str()); }
-	void printFpShapePc() const { BFM_DEBUG("fp - shape pc: \n%s", bfm_utils::NumMat2Str(m_matLandmarkShapePc).c_str()); }
-	void printShapeEv() const { BFM_DEBUG("shape variance: \n%s", bfm_utils::NumMat2Str(m_vecShapeEv).c_str()); }
 
 	inline void printExtParams() const 
 	{
-		BFM_DEBUG("yaw: %lf ", m_aExtParams[0]);
+		BFM_DEBUG("Roll:\t%lf ", m_aExtParams[0]);
 		BFM_DEBUG("(%lf')\n", (m_aExtParams[0] * 180.0 / M_PI));
-		BFM_DEBUG("pitch: %lf ", m_aExtParams[1]);
+		BFM_DEBUG("Yaw:\t%lf ", m_aExtParams[1]);
 		BFM_DEBUG("(%lf')\n", (m_aExtParams[1] * 180.0 / M_PI));
-		BFM_DEBUG("roll: %lf ", m_aExtParams[2]);
+		BFM_DEBUG("Pitch:\t%lf ", m_aExtParams[2]);
 		BFM_DEBUG("(%lf')\n", (m_aExtParams[2] * 180.0 / M_PI));
-		BFM_DEBUG("tx: %lf\n", m_aExtParams[3]);
-		BFM_DEBUG("ty: %lf\n", m_aExtParams[4]);
-		BFM_DEBUG("tz: %lf\n", m_aExtParams[5]);
+		BFM_DEBUG("tx:\t%lf\n", m_aExtParams[3]);
+		BFM_DEBUG("ty:\t%lf\n", m_aExtParams[4]);
+		BFM_DEBUG("tz:\t%lf\n", m_aExtParams[5]);
 	}
+
 
 	inline void printIntParams() const
 	{
-		BFM_DEBUG("fx: %lf\n", m_aIntParams[0]);
-		BFM_DEBUG("fy: %lf\n", m_aIntParams[1]);
-		BFM_DEBUG("cx: %lf\n", m_aIntParams[2]);
-		BFM_DEBUG("cy: %lf\n", m_aIntParams[3]);
+		BFM_DEBUG("Fx:\t%lf\n", m_aIntParams[0]);
+		BFM_DEBUG("Fy:\t%lf\n", m_aIntParams[1]);
+		BFM_DEBUG("Cx:\t%lf\n", m_aIntParams[2]);
+		BFM_DEBUG("Cy:\t%lf\n", m_aIntParams[3]);
 	}
 	
+
 	void printShapeCoef() const 
 	{ 
-		BFM_DEBUG("shape coef:\n");
+		BFM_DEBUG("Shape coefficients:\n");
 		bfm_utils::PrintArr(m_aShapeCoef, m_nIdPcs);
 	}
 	
+
 	void printExprCoef() const 
 	{ 
-		BFM_DEBUG("expression coef:\n");
+		BFM_DEBUG("Expression coefficients:\n");
 		bfm_utils::PrintArr(m_aExprCoef, m_nExprPcs);
 	}
 
-	inline void printRMat() const { BFM_DEBUG("R: \n%s", bfm_utils::NumMat2Str(m_matR).c_str()); }
-	inline void printTVec() const { BFM_DEBUG("T: \n%s", bfm_utils::NumMat2Str(m_vecT).c_str()); }
+
+	void printRMat() const 
+	{ 
+		std::string s = bfm_utils::NumMat2Str(this->m_matR);
+		BFM_DEBUG("R: \n%s", s.c_str()); 
+	}
 
 
-#else
-
-	inline void check() const { }
-	inline void printFpShapeMu() const { }
-	inline void printFpShapePc() const { }
-	inline void printShapeEv() const { }
-	inline void printExtParams() const { }
-	inline void printIntParams() const { }
-	inline void printShapeCoef() const { }
-	inline void printExprCoef() const { }
-	inline void printRMat() const { }
-	inline void printTVec() const { }
-
-
-#endif
+	void printTVec() const 
+	{
+		BFM_DEBUG("T: \n%s", bfm_utils::NumMat2Str(m_vecT).c_str()); 
+	}
 
 
 private:
 
 
+	/*
+	 * @Function alloc
+	 * @Function load
+	 * 		Allocate memory and load data. `alloc` must be used before `load`.
+	 * @Usage
+	 * 		bfmManager.alloc();
+	 * 		bfmManager.load();
+	 */
+
 	void alloc();
-
-
 	bool load();
 
+
+	/*
+	 * @Function extractLandmarks
+	 * 		Extract landmarks and save in specific variables. This function must be used after `alloc` 
+	 * and `load`. And it should not be used if landmark information are not be detected.
+	 * @Usage
+	 * 		bfmManager.extractLandmarks();
+	 */
 
 	void extractLandmarks();
 
 
+	/*
+	 * @Function coef2Object
+	 * 		Use coefficients combined with shape/tex/expression average, variance and principle component
+	 * to generate result (using PCA).
+	 * @Usage
+	 * 		VectorXd shape = bfmManager.coef2Object(
+	 * 							bfmManager.m_aShapeCoef, 
+	 * 							bfmManager.m_vecShapeMu,
+	 * 							bfmManager.m_matShapePc,
+	 * 							bfmManager.m_vecShapeEv,
+	 * 							bfmManager.m_nIdPcs);
+	 * @Parameters
+	 * 		aCoef: array of coefficients;
+	 * 		vecMu: vector of average;
+	 * 		matPc: matrix of principle component;
+	 * 		vecEv: vector of variance;
+	 * 		nLength: length of coefficients.
+	 */
+	
 	template<typename Derived>
-	Matrix<Derived, Dynamic, 1> coef2Object(const Derived *const &aCoef, 
-		const VectorXd &vecMu, const MatrixXd &matPc, const VectorXd &vecEv, unsigned int nLength) const;
+	Matrix<Derived, Dynamic, 1> coef2Object(const Derived *const aCoef, 
+		const VectorXd &vecMu, const MatrixXd &matPc, const VectorXd &vecEv, unsigned int nLength) const
+	{
+		assert(aCoef != nullptr);
+		assert(nLength >= 0);
 
+		Matrix<Derived, Dynamic, 1> tmpCoef(nLength);
+		for(auto i = 0u; i < nLength; i++)
+			tmpCoef(i) = aCoef[i];
+
+		Matrix<Derived, Dynamic, 1> tmpMu = vecMu.cast<Derived>();
+		Matrix<Derived, Dynamic, 1> tmpEv = vecEv.cast<Derived>();
+		Matrix<Derived, Dynamic, Dynamic> tmpPc = matPc.cast<Derived>();
+		return tmpMu + tmpPc * tmpCoef.cwiseProduct(tmpEv);
+	}
+
+
+	std::string m_strVersion;
+
+	// file path
 	std::string m_strModelPath;
 	std::string m_strLandmarkIdxPath;
+
+	// H5 dataset path
 	std::string m_strShapeMuH5Path;
 	std::string m_strShapeEvH5Path;
 	std::string m_strShapePcH5Path;
@@ -355,13 +500,14 @@ private:
 	unsigned int m_nIdPcs;
 	unsigned int m_nExprPcs;
 
-	/* ZYX - euler angle */
-	/* yaw:   rotate around z axis */
-	/* pitch: rotate around y axis */
-    /* roll:  rotate around x axis */
+	// Z1Y2X3
+	// Roll rotates around z axis
+	// Yaw rotates around y axis
+    // Pitch rotates around x axis 
 	Matrix3d m_matR;
 	Vector3d m_vecT;
-	double m_aExtParams[6] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };	/* yaw pitch roll tx ty tz */
+	double m_scale = 0.0075;
+	double m_aExtParams[N_EXT_PARAMS] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};	/* roll yaw pitch tx ty tz*/
 	double m_aIntParams[4] = { 0.0, 0.0, 0.0, 0.0 };	/* fx fy cx cy */
 
 	double *m_aShapeCoef;
@@ -369,6 +515,7 @@ private:
 	VectorXd m_vecShapeEv;
 	MatrixXd m_matShapePc;
 
+	bool m_bIsTexStd = true;
 	double *m_aTexCoef;
 	VectorXd m_vecTexMu;
 	VectorXd m_vecTexEv;
@@ -379,13 +526,14 @@ private:
 	VectorXd m_vecExprEv;
 	MatrixXd m_matExprPc;
 
-	VectorXd m_vecTriangleList;	/* triangle list */
+	Matrix<unsigned short, Dynamic, 1> m_vecTriangleList;	
 
 	VectorXd m_vecCurrentShape;
 	VectorXd m_vecCurrentTex;
 	VectorXd m_vecCurrentExpr;
 	VectorXd m_vecCurrentBlendshape;
 
+	// landmarks
 	bool m_bUseLandmark;
 	unsigned int m_nLandmarks;
 	std::vector<int> m_vecLandmarkIndices; 
@@ -393,9 +541,14 @@ private:
 	MatrixXd m_matLandmarkShapePc;
 	VectorXd m_vecLandmarkExprMu;
 	MatrixXd m_matLandmarkExprPc;
-	VectorXd fp_current_shape_;
-	VectorXd fp_current_expr_;
-	VectorXd fp_current_blendshape_;
+	VectorXd m_vecLandmarkCurrentShape;
+	VectorXd m_vecLandmarkCurrentExpr;
+	VectorXd m_vecLandmarkCurrentBlendshape;
+
+public:
+
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 };
 
 

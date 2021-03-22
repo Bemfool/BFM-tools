@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include "constant.h"
+#include "hdf5.h"
 #include "H5Cpp.h"
 #include <Eigen/Dense>
 
@@ -33,6 +34,7 @@ using Eigen::MatrixBase;
 			bfm_utils::Raw2Mat(m_##model_type, model_type); \
 			if(model_type){ \
 				delete [] model_type; \
+				model_type = nullptr; \
 			} \
 		} 
 
@@ -40,13 +42,21 @@ using Eigen::MatrixBase;
 namespace bfm_utils
 {
 
-
 	template<typename _Tp, typename _Ep>
 	void Raw2Mat(MatrixBase<_Tp> &m, _Ep *raw) 
 	{
 		for (unsigned int i = 0; i < m.rows(); i++)
 			for (unsigned int j = 0; j < m.cols(); j++)
 				m(i, j) = raw[i * (unsigned int)m.cols() + j];
+	}
+
+	
+	template<typename _Tp, typename _Ep>
+	void LoadH5Model(hid_t file, const std::string& strPath, _Tp *aData, MatrixBase<_Ep>& matData, hid_t predType)
+	{
+		hid_t dataSet = H5Dopen(file, strPath.c_str(), H5P_DEFAULT);
+		herr_t status = H5Dread(dataSet, predType, H5S_ALL, H5S_ALL, H5P_DEFAULT, aData);
+		Raw2Mat(matData, aData);
 	}
 
 
