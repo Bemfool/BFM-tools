@@ -5,9 +5,13 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <memory>
+
 #include "constant.h"
+
 #include "hdf5.h"
 #include "H5Cpp.h"
+
 #include <Eigen/Dense>
 
 
@@ -43,19 +47,19 @@ namespace bfm_utils
 {
 
 	template<typename _Tp, typename _Ep>
-	void Raw2Mat(MatrixBase<_Tp> &m, _Ep *raw) 
+	void Raw2Mat(MatrixBase<_Tp> &m, unique_ptr<_Ep[]>& raw) 
 	{
 		for (unsigned int i = 0; i < m.rows(); i++)
-			for (unsigned int j = 0; j < m.cols(); j++)
+			for (unsigned int j = 0; j < m.cols(); j++)	
 				m(i, j) = raw[i * (unsigned int)m.cols() + j];
 	}
 
 	
 	template<typename _Tp, typename _Ep>
-	void LoadH5Model(hid_t file, const std::string& strPath, _Tp *aData, MatrixBase<_Ep>& matData, hid_t predType)
+	void LoadH5Model(hid_t file, const std::string& strPath, unique_ptr<_Tp[]>& aData, MatrixBase<_Ep>& matData, hid_t predType)
 	{
 		hid_t dataSet = H5Dopen(file, strPath.c_str(), H5P_DEFAULT);
-		herr_t status = H5Dread(dataSet, predType, H5S_ALL, H5S_ALL, H5P_DEFAULT, aData);
+		herr_t status = H5Dread(dataSet, predType, H5S_ALL, H5S_ALL, H5P_DEFAULT, aData.get());
 		Raw2Mat(matData, aData);
 	}
 

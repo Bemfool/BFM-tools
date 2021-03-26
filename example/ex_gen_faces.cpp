@@ -38,27 +38,24 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-	std::string strBfmH5Path;
-	unsigned int nVertice, nFace, nIdPc, nExprPc;
-	std::string strIntParam;
+	std::string strBfmH5Path, strIntParam, strFpIdxPath = "";
 	double aIntParams[4] = { 0.0 };
-	unsigned int nFp;
-	std::string strFpIdxPath = "";
+	
 	in >> strBfmH5Path;
-	in >> nVertice >> nFace >> nIdPc >> nExprPc;
 	for(auto i = 0; i < 4; i++)
 	{
 		in >> strIntParam;
 		aIntParams[i] = atof(strIntParam.c_str());
 	}
-	in >> nFp;
-	if(nFp != 0) in >> strFpIdxPath;
+	if(!in.eof())
+		in >> strFpIdxPath;
+	else
+		strFpIdxPath = "";
 	in.close();
 
 	BaselFaceModelManager *modelManager = new BaselFaceModelManager(
 		strBfmH5Path,
 		aIntParams,
-		nFp,
 		strFpIdxPath
 	);
 

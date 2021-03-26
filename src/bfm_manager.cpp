@@ -4,15 +4,15 @@
 BaselFaceModelManager::BaselFaceModelManager(
 	std::string strModelPath,
 	double *aIntParams, 
-	unsigned int nLandmarks,
 	std::string strLandmarkIdxPath) :
 	m_strModelPath(strModelPath),
-	m_nLandmarks(nLandmarks),
 	m_strLandmarkIdxPath(strLandmarkIdxPath)
 {
 	if(!fs::exists(strModelPath))
 	{
-		LOG(WARNING) << "Path of Basel Face Model does not exist.";
+		LOG(WARNING) << "Path of Basel Face Model does not exist. Unexpected path:\t" << strModelPath;
+		m_strModelPath = "";
+		return;
 	}
 	else
 	{
@@ -133,22 +133,35 @@ BaselFaceModelManager::BaselFaceModelManager(
 	for(unsigned int iParam = 0; iParam < 4; iParam++)
 		m_aIntParams[iParam] = aIntParams[iParam];
 
-	m_bUseLandmark = nLandmarks == 0 ? false : true;
+	m_bUseLandmark = strLandmarkIdxPath == "" ? false : true;
+
+	if(m_bUseLandmark)
+	{
+		std::ifstream inFile;
+		inFile.open(strLandmarkIdxPath, std::ios::in);
+		assert(inFile.is_open());
+		m_nLandmarks = 0;
+		int dlibIdx, bfmIdx;
+		while(!inFile.eof())
+		{
+			inFile >> dlibIdx >> bfmIdx;
+			m_mapLandmarkIndices[dlibIdx - 1] = bfmIdx;
+			m_nLandmarks++;
+		}
+		inFile.close();
+	}
 
 	this->alloc();
-	this->load();
-	
+	this->load();	
+
+	this->extractLandmarks();
+	this->genLandmarkBlendshape();
+
 	unsigned int iTex = 0;
 	while(m_bIsTexStd)
 	{
 		if(m_vecTexMu(iTex++) > 1.0)
 			m_bIsTexStd = false;
-	}
-
-	if(m_bUseLandmark)
-	{
-		this->extractLandmarks();
-		this->genLandmarkBlendshape();
 	}
 
 	LOG(INFO) << "Infomation load done.\n";
@@ -186,7 +199,10 @@ BaselFaceModelManager::BaselFaceModelManager(
 }
 
 
-void BaselFaceModelManager::alloc() {
+void BaselFaceModelManager::alloc() 
+{
+	LOG(INFO) << "Allocate memory for model.";
+
 	m_aShapeCoef = new double[m_nIdPcs];
 	std::fill(m_aShapeCoef, m_aShapeCoef + m_nIdPcs, 0.0);
 	m_vecShapeMu.resize(m_nVertices * 3);
@@ -212,8 +228,8 @@ void BaselFaceModelManager::alloc() {
 	m_vecCurrentExpr.resize(m_nVertices * 3);
 	m_vecCurrentBlendshape.resize(m_nVertices * 3);
 
-	if (m_bUseLandmark) {
-		m_vecLandmarkIndices.resize(m_nLandmarks);
+	if (m_bUseLandmark) 
+	{
 		m_vecLandmarkShapeMu.resize(m_nLandmarks * 3);
 		m_matLandmarkShapePc.resize(m_nLandmarks * 3, m_nIdPcs);
 		m_vecLandmarkExprMu.resize(m_nLandmarks * 3);
@@ -222,17 +238,31 @@ void BaselFaceModelManager::alloc() {
 }
 
 
-bool BaselFaceModelManager::load() {
-	float *vecShapeMu = new float[m_nVertices * 3];
-	float *vecShapeEv = new float[m_nIdPcs];
-	float *matShapePc = new float[m_nVertices * 3 * m_nIdPcs];
-	float *vecTexMu = new float[m_nVertices * 3];
-	float *vecTexEv = new float[m_nIdPcs];
-	float *matTexPc = new float[m_nVertices * 3 * m_nIdPcs];
-	float *vecExprMu = new float[m_nVertices * 3];
-	float *vecExprEv = new float[m_nExprPcs];
-	float *matExprPc = new float[m_nVertices * 3 * m_nExprPcs];
-	unsigned short *vecTriangleList = new unsigned short[m_nFaces * 3];
+bool BaselFaceModelManager::load() 
+{
+	LOG(INFO) << "Load model from disk.";
+
+	// float *vecShapeMu = new float[m_nVertices * 3];
+	// float *vecShapeEv = new float[m_nIdPcs];
+	// float *matShapePc = new float[m_nVertices * 3 * m_nIdPcs];
+	// float *vecTexMu = new float[m_nVertices * 3];
+	// float *vecTexEv = new float[m_nIdPcs];
+	// float *matTexPc = new float[m_nVertices * 3 * m_nIdPcs];
+	// float *vecExprMu = new float[m_nVertices * 3];
+	// float *vecExprEv = new float[m_nExprPcs];
+	// float *matExprPc = new float[m_nVertices * 3 * m_nExprPcs];
+	// unsigned short *vecTriangleList = new unsigned short[m_nFaces * 3];
+
+	std::unique_ptr<float[]> vecShapeMu(new float[m_nVertices * 3]);
+	std::unique_ptr<float[]> vecShapeEv(new float[m_nIdPcs]);
+	std::unique_ptr<float[]> matShapePc(new float[m_nVertices * 3 * m_nIdPcs]);
+	std::unique_ptr<float[]> vecTexMu(new float[m_nVertices * 3]);
+	std::unique_ptr<float[]> vecTexEv(new float[m_nIdPcs]);
+	std::unique_ptr<float[]> matTexPc(new float[m_nVertices * 3 * m_nIdPcs]);
+	std::unique_ptr<float[]> vecExprMu(new float[m_nVertices * 3]);
+	std::unique_ptr<float[]> vecExprEv(new float[m_nExprPcs]);
+	std::unique_ptr<float[]> matExprPc(new float[m_nVertices * 3 * m_nExprPcs]);
+	std::unique_ptr<unsigned short[]> vecTriangleList(new unsigned short[m_nFaces * 3]);
 
 	hid_t file = H5Fopen(m_strModelPath.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
 
@@ -250,35 +280,16 @@ bool BaselFaceModelManager::load() {
 	
 	bfm_utils::LoadH5Model(file, m_strTriangleListH5Path, vecTriangleList, m_vecTriangleList, H5T_NATIVE_UINT16);
 
-	delete[] vecShapeMu;
-	delete[] vecShapeEv;
-	delete[] matShapePc;
-	delete[] vecTexMu;
-	delete[] vecTexEv;
-	delete[] matTexPc;
-	delete[] vecExprMu;
-	delete[] vecExprEv;
-	delete[] matExprPc;
-	delete[] vecTriangleList;
-
-	if(m_bUseLandmark)
-	{
-		ifstream in(m_strLandmarkIdxPath, std::ios::in);
-		if (!in) 
-		{
-			BFM_DEBUG("[ERROR] Can't open %s.", m_strLandmarkIdxPath.c_str());
-			return false;
-		}
-
-		unsigned int iLandmark;
-		for (unsigned int i = 0; i < m_nLandmarks; i++) 
-		{
-			in >> iLandmark;
-			m_vecLandmarkIndices[i] = iLandmark - 1;
-		}
-
-		in.close();
-	}
+	// delete[] vecShapeMu;
+	// delete[] vecShapeEv;
+	// delete[] matShapePc;
+	// delete[] vecTexMu;
+	// delete[] vecTexEv;
+	// delete[] matTexPc;
+	// delete[] vecExprMu;
+	// delete[] vecExprEv;
+	// delete[] matExprPc;
+	// delete[] vecTriangleList;
 	
 	return true;
 }
@@ -286,29 +297,31 @@ bool BaselFaceModelManager::load() {
 
 void BaselFaceModelManager::extractLandmarks() 
 {
-	for(unsigned int iLandmark = 0; iLandmark < m_nLandmarks; iLandmark++) 
+	unsigned int iLandmark = 0;
+	for(const auto& [dlibIdx, bfmIdx] : m_mapLandmarkIndices) 
 	{
-		unsigned int idx = m_vecLandmarkIndices[iLandmark];
-		m_vecLandmarkShapeMu(iLandmark * 3) = m_vecShapeMu(idx * 3);
-		m_vecLandmarkShapeMu(iLandmark * 3 + 1) = m_vecShapeMu(idx * 3 + 1);
-		m_vecLandmarkShapeMu(iLandmark * 3 + 2) = m_vecShapeMu(idx * 3 + 2);
-		m_vecLandmarkExprMu(iLandmark * 3) = m_vecExprMu(idx * 3);
-		m_vecLandmarkExprMu(iLandmark * 3 + 1) = m_vecExprMu(idx * 3 + 1);
-		m_vecLandmarkExprMu(iLandmark * 3 + 2) = m_vecExprMu(idx * 3 + 2);
+		m_vecLandmarkShapeMu(iLandmark * 3) = m_vecShapeMu(bfmIdx * 3);
+		m_vecLandmarkShapeMu(iLandmark * 3 + 1) = m_vecShapeMu(bfmIdx * 3 + 1);
+		m_vecLandmarkShapeMu(iLandmark * 3 + 2) = m_vecShapeMu(bfmIdx * 3 + 2);
+		m_vecLandmarkExprMu(iLandmark * 3) = m_vecExprMu(bfmIdx * 3);
+		m_vecLandmarkExprMu(iLandmark * 3 + 1) = m_vecExprMu(bfmIdx * 3 + 1);
+		m_vecLandmarkExprMu(iLandmark * 3 + 2) = m_vecExprMu(bfmIdx * 3 + 2);
 
 		for(unsigned int iIdPc = 0; iIdPc < m_nIdPcs; iIdPc++) 
 		{
-			m_matLandmarkShapePc(iLandmark * 3, iIdPc) = m_matShapePc(idx * 3, iIdPc);
-			m_matLandmarkShapePc(iLandmark * 3 + 1, iIdPc) = m_matShapePc(idx * 3 + 1, iIdPc);
-			m_matLandmarkShapePc(iLandmark * 3 + 2, iIdPc) = m_matShapePc(idx * 3 + 2, iIdPc);	
+			m_matLandmarkShapePc(iLandmark * 3, iIdPc) = m_matShapePc(bfmIdx * 3, iIdPc);
+			m_matLandmarkShapePc(iLandmark * 3 + 1, iIdPc) = m_matShapePc(bfmIdx * 3 + 1, iIdPc);
+			m_matLandmarkShapePc(iLandmark * 3 + 2, iIdPc) = m_matShapePc(bfmIdx * 3 + 2, iIdPc);	
 		}
 
 		for(unsigned int iExprPc = 0; iExprPc < m_nExprPcs; iExprPc++) 
 		{
-			m_matLandmarkExprPc(iLandmark * 3, iExprPc) = m_matExprPc(idx * 3, iExprPc);
-			m_matLandmarkExprPc(iLandmark * 3 + 1, iExprPc) = m_matExprPc(idx * 3 + 1, iExprPc);
-			m_matLandmarkExprPc(iLandmark * 3 + 2, iExprPc) = m_matExprPc(idx * 3 + 2, iExprPc);
+			m_matLandmarkExprPc(iLandmark * 3, iExprPc) = m_matExprPc(bfmIdx * 3, iExprPc);
+			m_matLandmarkExprPc(iLandmark * 3 + 1, iExprPc) = m_matExprPc(bfmIdx * 3 + 1, iExprPc);
+			m_matLandmarkExprPc(iLandmark * 3 + 2, iExprPc) = m_matExprPc(bfmIdx * 3 + 2, iExprPc);
 		}
+
+		++iLandmark;
 	}
 }
 
@@ -506,13 +519,24 @@ void BaselFaceModelManager::writePly(std::string fn, long mode) const
 		}
 
 		unsigned char r, g, b;
-		if ((mode & ModelWriteMode_PickLandmark) && 
-			std::find(m_vecLandmarkIndices.begin(), m_vecLandmarkIndices.end(), iVertice) != m_vecLandmarkIndices.end()) 
+		if (mode & ModelWriteMode_PickLandmark)
 		{
-			r = 255;
-			g = 0;
-			b = 0;
-			cnt++;
+			bool bIsLandmark = false;
+			for(const auto& [dlibIdx, bfmIdx] : m_mapLandmarkIndices)
+			{
+				if(bfmIdx == iVertice)
+				{
+					bIsLandmark = true;
+					break;
+				}
+			}
+			if(bIsLandmark)
+			{
+				r = 255;
+				g = 0;
+				b = 0;
+				cnt++;
+			}
 		} 
 		else 
 		{

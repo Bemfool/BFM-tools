@@ -17,6 +17,10 @@
 
 #include "glog/logging.h"
 
+#include <string>
+#include <fstream>
+#include <map>
+#include <memory>
 #include <boost/filesystem.hpp>
 
 
@@ -46,30 +50,14 @@ public:
 	 * @Function Constructor
 	 * @Parameters
 	 * 		strModelPath: H5 file storing Basel Face Model;
-	 * 		nVertices: Vertice number;
-	 * 		nFaces: Face number;
-	 * 		nIdPcs: Identity (shape and texture) principle component number;
-	 *		nExprPcs: Expression princile component number;
 	 *		aIntParams: Camera intrinsic parameters, array of four double number (fx, fy, cx, cy); 
-	 *		strShapeMuH5Path: H5 database path of average shape;
-	 *		strShapeEvH5Path: H5 database path of shape variance;
-	 *		strShapePcH5Path: H5 database path of shape princile component basis;
-	 *	    strTexMuH5Path: H5 database path of average texture;
-	 *		strTexEvH5Path: H5 database path of texture variance;
-	 *		strTexPcH5Path: H5 database path of texture princile component basis;
-	 *	    strExprMuH5Path: H5 database path of average expression;
-	 *		strExprEvH5Path: H5 database path of expression variance;
-	 *		strExprPcH5Path: H5 database path of expression princile component basis;
-	 *		strTriangleListH5Path: H5 database path of triangle list;
-	 *		nLandmarks: Landmark number. Setting = 0 means that landmarks are not needed;
-	 *		strLandmarkIdxPath: File path storing index of landmarks.
+	 *		strLandmarkIdxPath: File path storing index of landmarks("" means no landmark).
 	 */
 	
 	BaselFaceModelManager() = default;
 	BaselFaceModelManager(
 		std::string strModelPath,
 		double *aIntParams, 
-		unsigned int nLandmarks = 0,
 		std::string strLandmarkIdxPath = "");
 
 
@@ -236,6 +224,7 @@ public:
 /***************************************** Set & Get Functions ***********************************************/
 /*************************************************************************************************************/
 
+	inline const std::string& getStrModelPath() const { return m_strModelPath; }
 
 	inline const unsigned int getNIdPcs() const { return m_nIdPcs; }
 	inline const unsigned int getNExprPcs() const { return m_nExprPcs; }
@@ -536,7 +525,7 @@ private:
 	// landmarks
 	bool m_bUseLandmark;
 	unsigned int m_nLandmarks;
-	std::vector<int> m_vecLandmarkIndices; 
+	std::map<int, int> m_mapLandmarkIndices; 
 	VectorXd m_vecLandmarkShapeMu;
 	MatrixXd m_matLandmarkShapePc;
 	VectorXd m_vecLandmarkExprMu;
