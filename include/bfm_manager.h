@@ -21,6 +21,9 @@
 #include <fstream>
 #include <map>
 #include <memory>
+#include <array>
+#include <stdexcept>
+#include <new>
 #include <boost/filesystem.hpp>
 
 
@@ -35,12 +38,12 @@ namespace fs = boost::filesystem;
 
 
 /*
- * @Class BaselFaceModelManager
+ * @Class BfmManager
  * 		This class manages related data of Basel Face Model, which may be from official download of personal
  * custom. Users could use the class to read, write or draw face model.
  */
 
-class BaselFaceModelManager {
+class BfmManager {
 
 
 public:
@@ -54,11 +57,12 @@ public:
 	 *		strLandmarkIdxPath: File path storing index of landmarks("" means no landmark).
 	 */
 	
-	BaselFaceModelManager() = default;
-	BaselFaceModelManager(
-		std::string strModelPath,
-		double *aIntParams, 
-		std::string strLandmarkIdxPath = "");
+	BfmManager() = default;
+	BfmManager(
+		const std::string& strModelPath,
+		const std::array<double, 4>& aIntParams, 
+		const std::string& strLandmarkIdxPath = ""
+	);
 
 
 	/*
@@ -235,11 +239,16 @@ public:
 	inline double *getMutableShapeCoef() { return m_aShapeCoef; }
 	inline double *getMutableTexCoef() { return m_aTexCoef; }
 	inline double *getMutableExprCoef() { return m_aExprCoef; }
-	inline double *getMutableExtParams() { return m_aExtParams; }
-	inline double *getMutableIntParams() { return m_aIntParams; }
+	// inline double *getMutableExtParams() { return m_aExtParams; }
+	// inline double *getMutableIntParams() { return m_aIntParams; }
+	inline std::array<double, N_EXT_PARAMS>& getMutableExtParams() { return m_aExtParams; } 
+	inline std::array<double, N_INT_PARAMS>& getMutableIntParams() { return m_aIntParams; } 
+
 	inline double& getMutableScale() { return m_scale; }
-	inline const double *getExtParams() const { return m_aExtParams; }
-	inline const double *getIntParams() const { return m_aIntParams; }
+	// inline const double *getExtParams() const { return m_aExtParams; }
+	// inline const double *getIntParams() const { return m_aIntParams; }
+	inline const std::array<double, N_EXT_PARAMS>& getExtParams() { return m_aExtParams; } 
+	inline const std::array<double, N_INT_PARAMS>& getIntParams() { return m_aIntParams; } 
 
 	inline const Matrix3d &getMatR() const { return m_matR; }
 	inline const Vector3d &getVecT() const { return m_vecT; }
@@ -318,87 +327,80 @@ public:
 
 	inline void check() const
 	{
-		BFM_DEBUG("[BFM_MANAGER] Check data\n");
-		BFM_DEBUG("	(1) Shape average:\n");
-		BFM_DEBUG("		Yours:\t%lf\n", m_vecShapeMu(0));
-		BFM_DEBUG("		Ref:\t-57239\t42966\t80410\n\n");
-		BFM_DEBUG("	(2) Shape variance: \n");
-		BFM_DEBUG("		Yours:\t%lf\t%lf\n", m_vecShapeEv(0), m_vecShapeEv(1));
-		BFM_DEBUG("		Ref:\t884340\t555880\n\n");
-		BFM_DEBUG("	(3) Shape principle component: \n");
-		BFM_DEBUG("		Yours:\t%lf\n", m_matShapePc(0, 0));
-		BFM_DEBUG("		Ref:\t-0.0024\n\n");
-		BFM_DEBUG("	(4) Texture average: \n");
-		BFM_DEBUG("		Yours:\t%lf\n", m_vecTexMu(0));
-		BFM_DEBUG("		Ref:\t182.8750\t135.0400\t107.1400\n\n");
-		BFM_DEBUG("	(5) Texture variance: \n");
-		BFM_DEBUG("		Yours:\t%lf\t%lf\n", m_vecTexEv(0), m_vecTexEv(1));
-		BFM_DEBUG("		Ref:\t4103.2\t2024.1\n\n");
-		BFM_DEBUG("	(6) Texture principle component: \n");
-		BFM_DEBUG("		Yours:\t%lf\n", m_matTexPc(0, 0));
-		BFM_DEBUG("		Ref:\t-0.0028\n\n");
-		BFM_DEBUG("	(7) Expression average: \n");
-		BFM_DEBUG("		Yours:\t%lf\n", m_vecExprMu(0));
-		BFM_DEBUG("		Ref:\t182.8750\t135.0400\t107.1400\n\n");
-		BFM_DEBUG("	(8) Expression variance: \n");
-		BFM_DEBUG("		Yours:\t%lf\t%lf\n", m_vecExprEv(0), m_vecExprEv(1));
-		BFM_DEBUG("		Ref:\t4103.2\t2024.1\n\n");
-		BFM_DEBUG("	(9) Expression principle component: \n");
-		BFM_DEBUG("		Yours:\t%lf\n", m_matExprPc(0, 0));
-		BFM_DEBUG("		Ref:\t-0.0028\n\n");
-		BFM_DEBUG("	(10) Triangle list: \n");
-		BFM_DEBUG("		Yours:\t%u\t%u\n", m_vecTriangleList(0), m_vecTriangleList(1));
-		BFM_DEBUG("		Ref:\t-0.0028\n\n");
+		LOG(INFO) << "Check data.";
+		LOG(INFO) << "------------------------------------------------------------------------";
+		LOG(INFO) << "| Data\t\t\t\t| Reference\t\t| Yours";
+		LOG(INFO) << "------------------------------------------------------------------------";
+		LOG(INFO) << "| Shape\t\t| Average\t\t| -57239\t| " << m_vecShapeMu(0);
+		LOG(INFO) << "| \t\t| Variance\t| 884340\t\t| " << m_vecShapeEv(0);
+		LOG(INFO) << "| \t\t| Principle component\t| -0.0024\t| " << m_matShapePc(0, 0);
+		LOG(INFO) << "------------------------------------------------------------------------";
+		LOG(INFO) << "| Texture\t| Average\t| 182.8750\t\t| " << m_vecTexMu(0);
+		LOG(INFO) << "| \t\t| Variance\t| 4103.2\t\t| " << m_vecTexEv(0);
+		LOG(INFO) << "| \t\t| Principle component\t| -0.0028\t| " << m_matTexPc(0, 0);
+		LOG(INFO) << "------------------------------------------------------------------------";
+		LOG(INFO) << "| Expression\t| Average\t\t| 182.875\t| " << m_vecExprMu(0);
+		LOG(INFO) << "| \t\t| Variance\t| 4103.2\t\t| " << m_vecExprEv(0);
+		LOG(INFO) << "| \t\t| Principle component\t| -0.0028\t| " << m_matExprPc(0, 0);
+		LOG(INFO) << "------------------------------------------------------------------------";
+		LOG(INFO) << "| Triangle list\t\t| 1\t\t| " << m_vecTriangleList(0);
+		LOG(INFO) << "------------------------------------------------------------------------";
 	}
 
 
 	inline void printExtParams() const 
 	{
-		BFM_DEBUG("Roll:\t%lf ", m_aExtParams[0]);
-		BFM_DEBUG("(%lf')\n", (m_aExtParams[0] * 180.0 / M_PI));
-		BFM_DEBUG("Yaw:\t%lf ", m_aExtParams[1]);
-		BFM_DEBUG("(%lf')\n", (m_aExtParams[1] * 180.0 / M_PI));
-		BFM_DEBUG("Pitch:\t%lf ", m_aExtParams[2]);
-		BFM_DEBUG("(%lf')\n", (m_aExtParams[2] * 180.0 / M_PI));
-		BFM_DEBUG("tx:\t%lf\n", m_aExtParams[3]);
-		BFM_DEBUG("ty:\t%lf\n", m_aExtParams[4]);
-		BFM_DEBUG("tz:\t%lf\n", m_aExtParams[5]);
+		LOG(INFO) << "\t\tRoll:\t" << m_aExtParams[0] << " ( " << m_aExtParams[0] * 180.0 / M_PI << " )";
+		LOG(INFO) << "Rotation\tYaw:\t" << m_aExtParams[1] << " ( " << m_aExtParams[1] * 180.0 / M_PI << " )";
+		LOG(INFO) << "\t\tPitch:\t" << m_aExtParams[2] << " (" << m_aExtParams[2] * 180.0 / M_PI << " )";
+		LOG(INFO) << "\t\tTx:\t" << m_aExtParams[3];
+		LOG(INFO) << "Translation\tTy:\t" << m_aExtParams[4];
+		LOG(INFO) << "\t\tTz:\t" << m_aExtParams[5];
 	}
 
 
 	inline void printIntParams() const
 	{
-		BFM_DEBUG("Fx:\t%lf\n", m_aIntParams[0]);
-		BFM_DEBUG("Fy:\t%lf\n", m_aIntParams[1]);
-		BFM_DEBUG("Cx:\t%lf\n", m_aIntParams[2]);
-		BFM_DEBUG("Cy:\t%lf\n", m_aIntParams[3]);
+		LOG(INFO) << "Fx:\t" << m_aIntParams[0];
+		LOG(INFO) << "Fy:\t" << m_aIntParams[1];
+		LOG(INFO) << "Cx:\t" << m_aIntParams[2];
+		LOG(INFO) << "Cy:\t" << m_aIntParams[3];
 	}
 	
 
-	void printShapeCoef() const 
+	void printShapeCoefTopK(unsigned short nK) const 
 	{ 
-		BFM_DEBUG("Shape coefficients:\n");
-		bfm_utils::PrintArr(m_aShapeCoef, m_nIdPcs);
-	}
+		LOG(INFO) << "Top k of shape coefficients:";
+
+		auto&& log = COMPACT_GOOGLE_LOG_INFO;
+		for(auto i = 0; i < nK; ++i)
+			log.stream() << " " << m_aShapeCoef[i];
+		log.stream() << "\n";
+	}	
 	
 
-	void printExprCoef() const 
+	void printExprCoefTopK(unsigned short nK) const 
 	{ 
-		BFM_DEBUG("Expression coefficients:\n");
-		bfm_utils::PrintArr(m_aExprCoef, m_nExprPcs);
+		LOG(INFO) << "Top k of expression coefficients:\n";
+	
+		auto&& log = COMPACT_GOOGLE_LOG_INFO;
+		for(auto i = 0; i < nK; ++i)
+			log.stream() << " " << m_aExprCoef[i];
+		log.stream() << "\n";
 	}
 
 
 	void printRMat() const 
 	{ 
-		std::string s = bfm_utils::NumMat2Str(this->m_matR);
-		BFM_DEBUG("R: \n%s", s.c_str()); 
+		// std::string s = bfm_utils::NumMat2Str(this->m_matR);
+		LOG(INFO) << m_matR;
 	}
 
 
 	void printTVec() const 
 	{
-		BFM_DEBUG("T: \n%s", bfm_utils::NumMat2Str(m_vecT).c_str()); 
+		// LOG(INFO) << "T: \n%s", bfm_utils::NumMat2Str(m_vecT).c_str(); 
+		LOG(INFO) << m_vecT;
 	}
 
 
@@ -493,46 +495,48 @@ private:
 	// Roll rotates around z axis
 	// Yaw rotates around y axis
     // Pitch rotates around x axis 
-	Matrix3d m_matR;
-	Vector3d m_vecT;
+	Eigen::Matrix3d m_matR;
+	Eigen::Vector3d m_vecT;
 	double m_scale = 0.0075;
-	double m_aExtParams[N_EXT_PARAMS] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};	/* roll yaw pitch tx ty tz*/
-	double m_aIntParams[4] = { 0.0, 0.0, 0.0, 0.0 };	/* fx fy cx cy */
+	// double m_aExtParams[N_EXT_PARAMS] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};	/* roll yaw pitch tx ty tz*/
+	// double m_aIntParams[N_INT_PARAMS] = { 0.0, 0.0, 0.0, 0.0 };	/* fx fy cx cy */
+	std::array<double, N_EXT_PARAMS> m_aExtParams = { }; /* roll yaw pitch tx ty tz (initialized as 0)*/
+	std::array<double, N_INT_PARAMS> m_aIntParams = { }; /* fx fy cx cy (initialized as 0)*/
 
 	double *m_aShapeCoef;
-	VectorXd m_vecShapeMu;
-	VectorXd m_vecShapeEv;
-	MatrixXd m_matShapePc;
+	Eigen::VectorXd m_vecShapeMu;
+	Eigen::VectorXd m_vecShapeEv;
+	Eigen::MatrixXd m_matShapePc;
 
 	bool m_bIsTexStd = true;
 	double *m_aTexCoef;
-	VectorXd m_vecTexMu;
-	VectorXd m_vecTexEv;
-	MatrixXd m_matTexPc;
+	Eigen::VectorXd m_vecTexMu;
+	Eigen::VectorXd m_vecTexEv;
+	Eigen::MatrixXd m_matTexPc;
 
 	double *m_aExprCoef;
-	VectorXd m_vecExprMu;
-	VectorXd m_vecExprEv;
-	MatrixXd m_matExprPc;
+	Eigen::VectorXd m_vecExprMu;
+	Eigen::VectorXd m_vecExprEv;
+	Eigen::MatrixXd m_matExprPc;
 
-	Matrix<unsigned short, Dynamic, 1> m_vecTriangleList;	
+	Eigen::Matrix<unsigned short, Eigen::Dynamic, 1> m_vecTriangleList;	
 
-	VectorXd m_vecCurrentShape;
-	VectorXd m_vecCurrentTex;
-	VectorXd m_vecCurrentExpr;
-	VectorXd m_vecCurrentBlendshape;
+	Eigen::VectorXd m_vecCurrentShape;
+	Eigen::VectorXd m_vecCurrentTex;
+	Eigen::VectorXd m_vecCurrentExpr;
+	Eigen::VectorXd m_vecCurrentBlendshape;
 
 	// landmarks
 	bool m_bUseLandmark;
 	unsigned int m_nLandmarks;
 	std::map<int, int> m_mapLandmarkIndices; 
-	VectorXd m_vecLandmarkShapeMu;
-	MatrixXd m_matLandmarkShapePc;
-	VectorXd m_vecLandmarkExprMu;
-	MatrixXd m_matLandmarkExprPc;
-	VectorXd m_vecLandmarkCurrentShape;
-	VectorXd m_vecLandmarkCurrentExpr;
-	VectorXd m_vecLandmarkCurrentBlendshape;
+	Eigen::VectorXd m_vecLandmarkShapeMu;
+	Eigen::MatrixXd m_matLandmarkShapePc;
+	Eigen::VectorXd m_vecLandmarkExprMu;
+	Eigen::MatrixXd m_matLandmarkExprPc;
+	Eigen::VectorXd m_vecLandmarkCurrentShape;
+	Eigen::VectorXd m_vecLandmarkCurrentExpr;
+	Eigen::VectorXd m_vecLandmarkCurrentBlendshape;
 
 public:
 

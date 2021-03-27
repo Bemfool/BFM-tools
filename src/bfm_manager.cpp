@@ -1,11 +1,12 @@
 ﻿#include "bfm_manager.h"
 
 
-BaselFaceModelManager::BaselFaceModelManager(
-	std::string strModelPath,
-	double *aIntParams, 
-	std::string strLandmarkIdxPath) :
+BfmManager::BfmManager(
+	const std::string& strModelPath,
+	const std::array<double, 4>& aIntParams, 
+	const std::string& strLandmarkIdxPath) :
 	m_strModelPath(strModelPath),
+	m_aIntParams(aIntParams),
 	m_strLandmarkIdxPath(strLandmarkIdxPath)
 {
 	if(!fs::exists(strModelPath))
@@ -104,9 +105,6 @@ BaselFaceModelManager::BaselFaceModelManager(
 			else
 			{
 				LOG(WARNING) << "Load an undefined BFM model.";
-				LOG(WARNING) << "Please check:";
-				LOG(WARNING) << "\t(1) Rename data officially downloaded.";
-				LOG(WARNING) << "\t(2) Define my custom data dimension and path.";
 
 				// Custom (Update by yourself)
 				m_strVersion = "Others";
@@ -142,9 +140,8 @@ BaselFaceModelManager::BaselFaceModelManager(
 		assert(inFile.is_open());
 		m_nLandmarks = 0;
 		int dlibIdx, bfmIdx;
-		while(!inFile.eof())
+		while(inFile >> dlibIdx >> bfmIdx)
 		{
-			inFile >> dlibIdx >> bfmIdx;
 			m_mapLandmarkIndices[dlibIdx - 1] = bfmIdx;
 			m_nLandmarks++;
 		}
@@ -153,9 +150,7 @@ BaselFaceModelManager::BaselFaceModelManager(
 
 	this->alloc();
 	this->load();	
-
 	this->extractLandmarks();
-	this->genLandmarkBlendshape();
 
 	unsigned int iTex = 0;
 	while(m_bIsTexStd)
@@ -169,23 +164,23 @@ BaselFaceModelManager::BaselFaceModelManager(
 	LOG(INFO) << "*******************************************";
 	LOG(INFO) << "*********** Load Basel Face Model *********";
 	LOG(INFO) << "*******************************************";
-	LOG(INFO) << "Version:\t" << m_strVersion;
-	LOG(INFO) << "Number of vertices:\t" << m_nVertices;
-	LOG(INFO) << "Number of faces:\t" << m_nFaces;
-	LOG(INFO) << "Number of shape PCs:\t" << m_nIdPcs;
-	LOG(INFO) << "Number of texture PCs:\t" << m_nIdPcs;
+	LOG(INFO) << "Version:\t\t\t\t" << m_strVersion;
+	LOG(INFO) << "Number of vertices:\t\t\t" << m_nVertices;
+	LOG(INFO) << "Number of faces:\t\t\t" << m_nFaces;
+	LOG(INFO) << "Number of shape PCs:\t\t\t" << m_nIdPcs;
+	LOG(INFO) << "Number of texture PCs:\t\t\t" << m_nIdPcs;
 	if(m_strVersion == "2009")
-		LOG(INFO) << "Number of expression PCs:\tNone";
+		LOG(INFO) << "Number of expression PCs:\t\tNone";
 	else
-		LOG(INFO) << "Number of expression PCs:\t" << m_nExprPcs;
+		LOG(INFO) << "Number of expression PCs:\t\t" << m_nExprPcs;
 	if(m_bIsTexStd)
-		LOG(INFO) << "Texture range:\t0.0~1.0\n";
+		LOG(INFO) << "Texture range:\t\t\t\t0.0~1.0";
 	else
-		LOG(INFO) << "Texture range:\t0~255\n";
-	LOG(INFO) << "Number of dlib landmarks:\t68";
+		LOG(INFO) << "Texture range:\t\t\t\t0~255";
+	LOG(INFO) << "Number of dlib landmarks:\t\t68";
 	if(m_bUseLandmark)
 	{
-		LOG(INFO) << "Number of custom landmarks:\t" << m_nLandmarks;
+		LOG(INFO) << "Number of custom landmarks:\t\t" << m_nLandmarks;
 		LOG(INFO) << "Corresponding between dlib and custom:\t" << m_strLandmarkIdxPath;
 	}
 	else
@@ -196,10 +191,11 @@ BaselFaceModelManager::BaselFaceModelManager(
 	LOG(INFO) << "\n";
 
 	this->genAvgFace();
+	this->genLandmarkBlendshape();
 }
 
 
-void BaselFaceModelManager::alloc() 
+void BfmManager::alloc() 
 {
 	LOG(INFO) << "Allocate memory for model.";
 
@@ -238,64 +234,50 @@ void BaselFaceModelManager::alloc()
 }
 
 
-bool BaselFaceModelManager::load() 
+bool BfmManager::load() 
 {
 	LOG(INFO) << "Load model from disk.";
 
-	// float *vecShapeMu = new float[m_nVertices * 3];
-	// float *vecShapeEv = new float[m_nIdPcs];
-	// float *matShapePc = new float[m_nVertices * 3 * m_nIdPcs];
-	// float *vecTexMu = new float[m_nVertices * 3];
-	// float *vecTexEv = new float[m_nIdPcs];
-	// float *matTexPc = new float[m_nVertices * 3 * m_nIdPcs];
-	// float *vecExprMu = new float[m_nVertices * 3];
-	// float *vecExprEv = new float[m_nExprPcs];
-	// float *matExprPc = new float[m_nVertices * 3 * m_nExprPcs];
-	// unsigned short *vecTriangleList = new unsigned short[m_nFaces * 3];
+	try
+	{
+		std::unique_ptr<float[]> vecShapeMu(new float[m_nVertices * 3]);
+		std::unique_ptr<float[]> vecShapeEv(new float[m_nIdPcs]);
+		std::unique_ptr<float[]> matShapePc(new float[m_nVertices * 3 * m_nIdPcs]);
+		std::unique_ptr<float[]> vecTexMu(new float[m_nVertices * 3]);
+		std::unique_ptr<float[]> vecTexEv(new float[m_nIdPcs]);
+		std::unique_ptr<float[]> matTexPc(new float[m_nVertices * 3 * m_nIdPcs]);
+		std::unique_ptr<float[]> vecExprMu(new float[m_nVertices * 3]);
+		std::unique_ptr<float[]> vecExprEv(new float[m_nExprPcs]);
+		std::unique_ptr<float[]> matExprPc(new float[m_nVertices * 3 * m_nExprPcs]);
+		std::unique_ptr<unsigned short[]> vecTriangleList(new unsigned short[m_nFaces * 3]);
 
-	std::unique_ptr<float[]> vecShapeMu(new float[m_nVertices * 3]);
-	std::unique_ptr<float[]> vecShapeEv(new float[m_nIdPcs]);
-	std::unique_ptr<float[]> matShapePc(new float[m_nVertices * 3 * m_nIdPcs]);
-	std::unique_ptr<float[]> vecTexMu(new float[m_nVertices * 3]);
-	std::unique_ptr<float[]> vecTexEv(new float[m_nIdPcs]);
-	std::unique_ptr<float[]> matTexPc(new float[m_nVertices * 3 * m_nIdPcs]);
-	std::unique_ptr<float[]> vecExprMu(new float[m_nVertices * 3]);
-	std::unique_ptr<float[]> vecExprEv(new float[m_nExprPcs]);
-	std::unique_ptr<float[]> matExprPc(new float[m_nVertices * 3 * m_nExprPcs]);
-	std::unique_ptr<unsigned short[]> vecTriangleList(new unsigned short[m_nFaces * 3]);
+		hid_t file = H5Fopen(m_strModelPath.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
 
-	hid_t file = H5Fopen(m_strModelPath.c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+		bfm_utils::LoadH5Model(file, m_strShapeMuH5Path, vecShapeMu, m_vecShapeMu, H5T_NATIVE_FLOAT);
+		bfm_utils::LoadH5Model(file, m_strShapeEvH5Path, vecShapeEv, m_vecShapeEv, H5T_NATIVE_FLOAT);
+		bfm_utils::LoadH5Model(file, m_strShapePcH5Path, matShapePc, m_matShapePc, H5T_NATIVE_FLOAT);
 
-	bfm_utils::LoadH5Model(file, m_strShapeMuH5Path, vecShapeMu, m_vecShapeMu, H5T_NATIVE_FLOAT);
-	bfm_utils::LoadH5Model(file, m_strShapeEvH5Path, vecShapeEv, m_vecShapeEv, H5T_NATIVE_FLOAT);
-	bfm_utils::LoadH5Model(file, m_strShapePcH5Path, matShapePc, m_matShapePc, H5T_NATIVE_FLOAT);
+		bfm_utils::LoadH5Model(file, m_strTexMuH5Path, vecTexMu, m_vecTexMu, H5T_NATIVE_FLOAT);
+		bfm_utils::LoadH5Model(file, m_strTexEvH5Path, vecTexEv, m_vecTexEv, H5T_NATIVE_FLOAT);
+		bfm_utils::LoadH5Model(file, m_strTexPcH5Path, matTexPc, m_matTexPc, H5T_NATIVE_FLOAT);
+		
+		bfm_utils::LoadH5Model(file, m_strExprMuH5Path, vecExprMu, m_vecExprMu, H5T_NATIVE_FLOAT);
+		bfm_utils::LoadH5Model(file, m_strExprEvH5Path, vecExprEv, m_vecExprEv, H5T_NATIVE_FLOAT);
+		bfm_utils::LoadH5Model(file, m_strExprPcH5Path, matExprPc, m_matExprPc, H5T_NATIVE_FLOAT);
+		
+		bfm_utils::LoadH5Model(file, m_strTriangleListH5Path, vecTriangleList, m_vecTriangleList, H5T_NATIVE_UINT16);
+	}
+	catch(std::bad_alloc& ba)
+	{
+		LOG(ERROR) << "Failed to alloc";
+		return false;
+	}
 
-	bfm_utils::LoadH5Model(file, m_strTexMuH5Path, vecTexMu, m_vecTexMu, H5T_NATIVE_FLOAT);
-	bfm_utils::LoadH5Model(file, m_strTexEvH5Path, vecTexEv, m_vecTexEv, H5T_NATIVE_FLOAT);
-	bfm_utils::LoadH5Model(file, m_strTexPcH5Path, matTexPc, m_matTexPc, H5T_NATIVE_FLOAT);
-	
-	bfm_utils::LoadH5Model(file, m_strExprMuH5Path, vecExprMu, m_vecExprMu, H5T_NATIVE_FLOAT);
-	bfm_utils::LoadH5Model(file, m_strExprEvH5Path, vecExprEv, m_vecExprEv, H5T_NATIVE_FLOAT);
-	bfm_utils::LoadH5Model(file, m_strExprPcH5Path, matExprPc, m_matExprPc, H5T_NATIVE_FLOAT);
-	
-	bfm_utils::LoadH5Model(file, m_strTriangleListH5Path, vecTriangleList, m_vecTriangleList, H5T_NATIVE_UINT16);
-
-	// delete[] vecShapeMu;
-	// delete[] vecShapeEv;
-	// delete[] matShapePc;
-	// delete[] vecTexMu;
-	// delete[] vecTexEv;
-	// delete[] matTexPc;
-	// delete[] vecExprMu;
-	// delete[] vecExprEv;
-	// delete[] matExprPc;
-	// delete[] vecTriangleList;
-	
 	return true;
 }
 
 
-void BaselFaceModelManager::extractLandmarks() 
+void BfmManager::extractLandmarks() 
 {
 	unsigned int iLandmark = 0;
 	for(const auto& [dlibIdx, bfmIdx] : m_mapLandmarkIndices) 
@@ -326,61 +308,69 @@ void BaselFaceModelManager::extractLandmarks()
 }
 
 
-void BaselFaceModelManager::genRndFace(double dScale) 
+void BfmManager::genRndFace(double dScale) 
 {
 	if(dScale == 0.0)
-	{
-		BFM_DEBUG("[BFM_MANAGER] Generate average face\n");
-	}
+		LOG(INFO) << "Generate average face";
 	else
-	{
-		BFM_DEBUG("[BFM_MANAGER] Generate random face (using the same scale)\n");
-	}
+		LOG(INFO) << "Generate random face (using the same scale)";
+
 	m_aShapeCoef = bfm_utils::randn(m_nIdPcs, dScale);
 	m_aTexCoef   = bfm_utils::randn(m_nIdPcs, dScale);
-	m_aExprCoef  = bfm_utils::randn(m_nExprPcs, dScale);
+	if(m_strVersion != "2009")
+		m_aExprCoef  = bfm_utils::randn(m_nExprPcs, dScale);
+
 	this->genFace();
 }
 
 
-void BaselFaceModelManager::genRndFace(double dShapeScale, double dTexScale, double dExprScale) 
+void BfmManager::genRndFace(double dShapeScale, double dTexScale, double dExprScale) 
 {
-	BFM_DEBUG("[BFM_MANAGER] Generate random face (using different scales)\n");
+	LOG(INFO) << "Generate random face (using different scales)";
 	m_aShapeCoef = bfm_utils::randn(m_nIdPcs, dShapeScale);
 	m_aTexCoef   = bfm_utils::randn(m_nIdPcs, dTexScale);
-	m_aExprCoef  = bfm_utils::randn(m_nExprPcs, dExprScale);
+	if(m_strVersion != "2009")
+		m_aExprCoef  = bfm_utils::randn(m_nExprPcs, dExprScale);
+
 	this->genFace();
 }
 
 
-void BaselFaceModelManager::genFace() 
+void BfmManager::genFace() 
 {
-	BFM_DEBUG("[BFM_MANAGER]Generate face with shape and expression coefficients -");
+	LOG(INFO) <<"Generate face with shape and expression coefficients";
 
 	m_vecCurrentShape = this->coef2Object(m_aShapeCoef, m_vecShapeMu, m_matShapePc, m_vecShapeEv, m_nIdPcs);
 	m_vecCurrentTex   = this->coef2Object(m_aTexCoef, m_vecTexMu, m_matTexPc, m_vecTexEv, m_nIdPcs);
-	m_vecCurrentExpr  = this->coef2Object(m_aExprCoef, m_vecExprMu, m_matExprPc, m_vecExprEv, m_nExprPcs);
-	m_vecCurrentBlendshape = m_vecCurrentShape + m_vecCurrentExpr;
-
-	BFM_DEBUG("Success\n");
+	if(m_strVersion != "2009")
+	{
+		m_vecCurrentExpr  = this->coef2Object(m_aExprCoef, m_vecExprMu, m_matExprPc, m_vecExprEv, m_nExprPcs);
+		m_vecCurrentBlendshape = m_vecCurrentShape + m_vecCurrentExpr;		
+	}
+	else
+		m_vecCurrentBlendshape = m_vecCurrentShape;
 }
 
 
-void BaselFaceModelManager::genLandmarkBlendshape()  
+void BfmManager::genLandmarkBlendshape()  
 {
-	BFM_DEBUG("[BFM_MANAGER] Generate landmarks with shape and expression coefficients -");
+	LOG(INFO) <<"Generate landmarks with shape and expression coefficients";
 
 	m_vecLandmarkCurrentShape = this->coef2Object(m_aShapeCoef, m_vecLandmarkShapeMu, m_matLandmarkShapePc, m_vecShapeEv, m_nIdPcs);
-	m_vecLandmarkCurrentExpr = this->coef2Object(m_aExprCoef, m_vecLandmarkExprMu, m_matLandmarkExprPc, m_vecExprEv, m_nExprPcs);
-	m_vecLandmarkCurrentBlendshape = m_vecLandmarkCurrentShape + m_vecLandmarkCurrentExpr;
-
-	BFM_DEBUG("Success\n");
+	if(m_strVersion != "2009")
+	{
+		m_vecLandmarkCurrentExpr = this->coef2Object(m_aExprCoef, m_vecLandmarkExprMu, m_matLandmarkExprPc, m_vecExprEv, m_nExprPcs);
+		m_vecLandmarkCurrentBlendshape = m_vecLandmarkCurrentShape + m_vecLandmarkCurrentExpr;
+	}
+	else
+		m_vecLandmarkCurrentBlendshape = m_vecLandmarkCurrentShape;
 }
 
 
-void BaselFaceModelManager::genRMat() 
+void BfmManager::genRMat() 
 {
-	BFM_DEBUG("[BFM_MANAGER] Generate rotation matrix.\n");
+	LOG(INFO) <<"Generate rotation matrix.";
+
 	const double &roll   = m_aExtParams[0];
 	const double &yaw    = m_aExtParams[1];
 	const double &pitch  = m_aExtParams[2];
@@ -388,9 +378,10 @@ void BaselFaceModelManager::genRMat()
 }
 
 
-void BaselFaceModelManager::genTVec()
+void BfmManager::genTVec()
 {
-	BFM_DEBUG("[BFM_MANAGER] Generate translation vector.\n");	
+	LOG(INFO) <<"Generate translation vector.";	
+
 	const double &tx = m_aExtParams[3];
 	const double &ty = m_aExtParams[4];
 	const double &tz = m_aExtParams[5];
@@ -398,22 +389,22 @@ void BaselFaceModelManager::genTVec()
 }
 
 
-void BaselFaceModelManager::genTransMat()
+void BfmManager::genTransMat()
 {
 	this->genRMat();
 	this->genTVec();
 }
 
 
-void BaselFaceModelManager::genExtParams()
+void BfmManager::genExtParams()
 {
-	BFM_DEBUG("generate external paramter:\n");
+	LOG(INFO) <<"Generate external paramter.";
 
 	if(!bfm_utils::IsRMat(m_matR))
 	{
-		BFM_DEBUG("	detect current matrix does not satisfy constraints - ");
+		LOG(WARNING) << "Detect current matrix does not satisfy constraints.";
 		bfm_utils::SatisfyExtMat(m_matR, m_vecT);
-		BFM_DEBUG("solve\n");
+		LOG(WARNING) << "Problem solved";
 	}
 
 	double sy = std::sqrt(m_matR(0,0) * m_matR(0,0) +  m_matR(1,0) * m_matR(1,0));
@@ -439,7 +430,7 @@ void BaselFaceModelManager::genExtParams()
 }
 
 
-void BaselFaceModelManager::accExtParams(double *aExtParams) 
+void BfmManager::accExtParams(double *aExtParams) 
 {
 	/* in every iteration, P = R`(RP+t)+t`, 
 	 * R_{new} = R`R_{old}
@@ -465,16 +456,19 @@ void BaselFaceModelManager::accExtParams(double *aExtParams)
 }	
 
 
-void BaselFaceModelManager::writePly(std::string fn, long mode) const 
+void BfmManager::writePly(std::string fn, long mode) const 
 {
 	std::ofstream out;
 	/* Note: In Linux Cpp, we should use std::ios::out as flag, which is not necessary in Windows */
 	out.open(fn, std::ios::out | std::ios::binary);
-	if (!out) 
+	if(!out.is_open()) 
 	{
-		BFM_DEBUG("Creation of %s failed.\n", fn.c_str());
+		std::string sErrMsg = "Creation of " + fn + " failed.";
+		LOG(ERROR) << sErrMsg;
+		throw std::runtime_error(sErrMsg);
 		return;
 	}
+
 	out << "ply\n";
 	out << "format binary_little_endian 1.0\n";
 	out << "comment Made from the 3D Morphable Face Model of the Univeristy of Basel, Switzerland.\n";
@@ -501,9 +495,6 @@ void BaselFaceModelManager::writePly(std::string fn, long mode) const
 		} 
 		else 
 		{
-			// x = float(m_vecShapeMu(iVertice * 3));
-			// y = float(m_vecShapeMu(iVertice * 3 + 1));
-			// z = float(m_vecShapeMu(iVertice * 3 + 2));
 			x = float(m_vecCurrentBlendshape(iVertice * 3));
 			y = float(m_vecCurrentBlendshape(iVertice * 3 + 1));
 			z = float(m_vecCurrentBlendshape(iVertice * 3 + 2));
@@ -514,7 +505,7 @@ void BaselFaceModelManager::writePly(std::string fn, long mode) const
 			x *= m_scale;
 			y *= m_scale;
 			z *= m_scale;
-			bfm_utils::Trans(m_aExtParams, x, y, z);
+			bfm_utils::Trans(m_aExtParams.data(), x, y, z);
 			// y = -y; z = -z;
 		}
 
@@ -555,8 +546,9 @@ void BaselFaceModelManager::writePly(std::string fn, long mode) const
 
 	if ((mode & ModelWriteMode_PickLandmark) && cnt != m_nLandmarks) 
 	{
-		BFM_DEBUG("[ERROR] Pick too less landmarks.\n");
-		BFM_DEBUG("Number of picked points is %d.\n", cnt);
+		LOG(ERROR) << "Pick too less landmarks.";
+		LOG(ERROR) << "Number of picked points is " << cnt;
+		throw std::runtime_error("Pick too less landmarks");
 	}
 
 	unsigned char N_VER_PER_FACE = 3;
@@ -577,13 +569,13 @@ void BaselFaceModelManager::writePly(std::string fn, long mode) const
 }
 
 
-void BaselFaceModelManager::writeLandmarkPly(std::string fn) const {
+void BfmManager::writeLandmarkPly(std::string fn) const {
 	std::ofstream out;
 	/* Note: In Linux Cpp, we should use std::ios::out as flag, which is not necessary in Windows */
 	out.open(fn, std::ios::out | std::ios::binary);
-	if (!out) 
+	if(!out.is_open()) 
 	{
-		BFM_DEBUG("Creation of %s failed.\n", fn.c_str());
+		LOG(ERROR) << "Creation of " << fn << " failed.";
 		return;
 	}
 
@@ -612,9 +604,9 @@ void BaselFaceModelManager::writeLandmarkPly(std::string fn) const {
 }
 
 
-void BaselFaceModelManager::clrExtParams()
+void BfmManager::clrExtParams()
 {
-	std::fill(m_aExtParams, m_aExtParams + 6, 0.0);
+	m_aExtParams.fill(0.0);
 	this->genTransMat();
 	this->genFace();
 }

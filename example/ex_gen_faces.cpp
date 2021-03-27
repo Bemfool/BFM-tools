@@ -2,13 +2,14 @@
 
 #include <fstream>
 #include <iostream>
+#include <array>
+#include <memory>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 
 
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
-using namespace std;
 
 
 const std::string LOG_PATH = R"(./log)";
@@ -34,36 +35,29 @@ int main(int argc, char *argv[])
 		in.open("./example/example-inputs.txt", std::ios::in);
 	if(!in.is_open())
 	{
-		std::cout << "can't open inputs.txt" << std::endl;
-		return -1;
+		LOG(ERROR) << "Cannot open inputs.txt";
+		exit(-1);
 	}
 
-	std::string strBfmH5Path, strIntParam, strFpIdxPath = "";
-	double aIntParams[4] = { 0.0 };
+	std::string sBfmH5Path, sLandmarkIdxPath = "";
+	std::array<double, N_INT_PARAMS> aIntParams = { };
 	
-	in >> strBfmH5Path;
-	for(auto i = 0; i < 4; i++)
-	{
-		in >> strIntParam;
-		aIntParams[i] = atof(strIntParam.c_str());
-	}
+	in >> sBfmH5Path;
+	for(auto i = 0; i < N_INT_PARAMS; i++)
+		in >> aIntParams[i];
 	if(!in.eof())
-		in >> strFpIdxPath;
+		in >> sLandmarkIdxPath;
 	else
-		strFpIdxPath = "";
+		sLandmarkIdxPath = "";
 	in.close();
 
-	BaselFaceModelManager *modelManager = new BaselFaceModelManager(
-		strBfmH5Path,
-		aIntParams,
-		strFpIdxPath
-	);
+	std::unique_ptr<BfmManager> pBfmManager(new BfmManager(sBfmH5Path, aIntParams, sLandmarkIdxPath));
 
-	modelManager->genAvgFace();
-	modelManager->writePly("avg_face.ply", ModelWriteMode_None);
+	pBfmManager->genAvgFace();
+	pBfmManager->writePly("avg_face.ply", ModelWriteMode_None);
 
-	modelManager->genRndFace(1.0);
-	modelManager->writePly("rnd_face.ply", ModelWriteMode_None);
+	pBfmManager->genRndFace(1.0);
+	pBfmManager->writePly("rnd_face.ply", ModelWriteMode_None);
 
 	google::ShutdownGoogleLogging();
 	return 0;
