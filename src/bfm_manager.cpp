@@ -502,9 +502,9 @@ void BfmManager::writePly(std::string fn, long mode) const
 
 		if(mode & ModelWriteMode_CameraCoord) 
 		{
-			x *= m_scale;
-			y *= m_scale;
-			z *= m_scale;
+			x *= m_dSc;
+			y *= m_dSc;
+			z *= m_dSc;
 			bfm_utils::Trans(m_aExtParams.data(), x, y, z);
 			// y = -y; z = -z;
 		}

@@ -33,7 +33,7 @@ enum BfmStatus {
 
 
 // Constant
-const unsigned int N_DLIB_LANDMARK = 68;
+const unsigned int N_DLIB_LANDMARKS = 68;
 const unsigned int N_EXT_PARAMS = 6;	// roll, yaw, pitch, tx, ty, tz, s
 const unsigned int N_INT_PARAMS = 4;	// fx, fy, cx, cy
 

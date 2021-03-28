@@ -239,14 +239,11 @@ public:
 	inline double *getMutableShapeCoef() { return m_aShapeCoef; }
 	inline double *getMutableTexCoef() { return m_aTexCoef; }
 	inline double *getMutableExprCoef() { return m_aExprCoef; }
-	// inline double *getMutableExtParams() { return m_aExtParams; }
-	// inline double *getMutableIntParams() { return m_aIntParams; }
 	inline std::array<double, N_EXT_PARAMS>& getMutableExtParams() { return m_aExtParams; } 
 	inline std::array<double, N_INT_PARAMS>& getMutableIntParams() { return m_aIntParams; } 
 
-	inline double& getMutableScale() { return m_scale; }
-	// inline const double *getExtParams() const { return m_aExtParams; }
-	// inline const double *getIntParams() const { return m_aIntParams; }
+	inline double& getMutableScale() { return m_dSc; }
+	inline double getScale() const { return m_dSc; }
 	inline const std::array<double, N_EXT_PARAMS>& getExtParams() { return m_aExtParams; } 
 	inline const std::array<double, N_INT_PARAMS>& getIntParams() { return m_aIntParams; } 
 
@@ -332,30 +329,30 @@ public:
 		LOG(INFO) << "| Data\t\t\t\t| Reference\t\t| Yours";
 		LOG(INFO) << "------------------------------------------------------------------------";
 		LOG(INFO) << "| Shape\t\t| Average\t\t| -57239\t| " << m_vecShapeMu(0);
-		LOG(INFO) << "| \t\t| Variance\t| 884340\t\t| " << m_vecShapeEv(0);
+		LOG(INFO) << "| \t\t| Variance\t\t| 884340\t\t| " << m_vecShapeEv(0);
 		LOG(INFO) << "| \t\t| Principle component\t| -0.0024\t| " << m_matShapePc(0, 0);
 		LOG(INFO) << "------------------------------------------------------------------------";
-		LOG(INFO) << "| Texture\t| Average\t| 182.8750\t\t| " << m_vecTexMu(0);
-		LOG(INFO) << "| \t\t| Variance\t| 4103.2\t\t| " << m_vecTexEv(0);
+		LOG(INFO) << "| Texture\t| Average\t\t| 182.8750\t\t| " << m_vecTexMu(0);
+		LOG(INFO) << "| \t\t| Variance\t\t| 4103.2\t\t| " << m_vecTexEv(0);
 		LOG(INFO) << "| \t\t| Principle component\t| -0.0028\t| " << m_matTexPc(0, 0);
 		LOG(INFO) << "------------------------------------------------------------------------";
 		LOG(INFO) << "| Expression\t| Average\t\t| 182.875\t| " << m_vecExprMu(0);
-		LOG(INFO) << "| \t\t| Variance\t| 4103.2\t\t| " << m_vecExprEv(0);
+		LOG(INFO) << "| \t\t| Variance\t\t| 4103.2\t\t| " << m_vecExprEv(0);
 		LOG(INFO) << "| \t\t| Principle component\t| -0.0028\t| " << m_matExprPc(0, 0);
 		LOG(INFO) << "------------------------------------------------------------------------";
-		LOG(INFO) << "| Triangle list\t\t| 1\t\t| " << m_vecTriangleList(0);
+		LOG(INFO) << "| Triangle list\t\t\t| 1\t\t| " << m_vecTriangleList(0);
 		LOG(INFO) << "------------------------------------------------------------------------";
 	}
 
 
 	inline void printExtParams() const 
 	{
-		LOG(INFO) << "\t\tRoll:\t" << m_aExtParams[0] << " ( " << m_aExtParams[0] * 180.0 / M_PI << " )";
-		LOG(INFO) << "Rotation\tYaw:\t" << m_aExtParams[1] << " ( " << m_aExtParams[1] * 180.0 / M_PI << " )";
-		LOG(INFO) << "\t\tPitch:\t" << m_aExtParams[2] << " (" << m_aExtParams[2] * 180.0 / M_PI << " )";
-		LOG(INFO) << "\t\tTx:\t" << m_aExtParams[3];
-		LOG(INFO) << "Translation\tTy:\t" << m_aExtParams[4];
-		LOG(INFO) << "\t\tTz:\t" << m_aExtParams[5];
+		LOG(INFO) << "Rotation\t\tRoll:\t" << m_aExtParams[0] << " ( " << m_aExtParams[0] * 180.0 / M_PI << " )";
+		LOG(INFO) << "\t\t\tYaw:\t" << m_aExtParams[1] << " ( " << m_aExtParams[1] * 180.0 / M_PI << " )";
+		LOG(INFO) << "\t\t\tPitch:\t" << m_aExtParams[2] << " (" << m_aExtParams[2] * 180.0 / M_PI << " )";
+		LOG(INFO) << "Translation\tTx:\t" << m_aExtParams[3];
+		LOG(INFO) << "\t\t\tTy:\t" << m_aExtParams[4];
+		LOG(INFO) << "\t\t\tTz:\t" << m_aExtParams[5];
 	}
 
 
@@ -392,14 +389,12 @@ public:
 
 	void printRMat() const 
 	{ 
-		// std::string s = bfm_utils::NumMat2Str(this->m_matR);
 		LOG(INFO) << m_matR;
 	}
 
 
 	void printTVec() const 
 	{
-		// LOG(INFO) << "T: \n%s", bfm_utils::NumMat2Str(m_vecT).c_str(); 
 		LOG(INFO) << m_vecT;
 	}
 
@@ -497,9 +492,7 @@ private:
     // Pitch rotates around x axis 
 	Eigen::Matrix3d m_matR;
 	Eigen::Vector3d m_vecT;
-	double m_scale = 0.0075;
-	// double m_aExtParams[N_EXT_PARAMS] = { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};	/* roll yaw pitch tx ty tz*/
-	// double m_aIntParams[N_INT_PARAMS] = { 0.0, 0.0, 0.0, 0.0 };	/* fx fy cx cy */
+	double m_dSc = 0.0075;
 	std::array<double, N_EXT_PARAMS> m_aExtParams = { }; /* roll yaw pitch tx ty tz (initialized as 0)*/
 	std::array<double, N_INT_PARAMS> m_aIntParams = { }; /* fx fy cx cy (initialized as 0)*/
 
