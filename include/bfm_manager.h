@@ -234,7 +234,7 @@ public:
 	inline const unsigned int getNExprPcs() const { return m_nExprPcs; }
 	inline const unsigned int getNFaces() const { return m_nFaces; }
 	inline const unsigned int getNVertices() const { return m_nVertices; }
-	inline const unsigned int getNLandmarks() const { return m_nLandmarks; }
+	inline const unsigned int getNLandmarks() const { return m_mapLandmarkIndices.size(); }
 	
 	inline double *getMutableShapeCoef() { return m_aShapeCoef; }
 	inline double *getMutableTexCoef() { return m_aTexCoef; }
@@ -307,7 +307,7 @@ public:
 	VectorXd getLandmarkCurrentBlendshapeTransformed() const { return bfm_utils::TransPoints(m_matR, m_vecT, m_vecLandmarkCurrentBlendshape); }
 	VectorXd getCurrentBlendshapeTransformed() const { return bfm_utils::TransPoints(m_matR, m_vecT, m_vecCurrentBlendshape); }
 	inline const Matrix<unsigned short, Dynamic, 1> &getTriangleList() const { return m_vecTriangleList; }
-
+	inline const auto& getMapLandmarkIndices() const { return m_mapLandmarkIndices; }
 
 /*************************************************************************************************************/
 /************************************** Print Function (for Debug) *******************************************/
@@ -326,21 +326,21 @@ public:
 	{
 		LOG(INFO) << "Check data.";
 		LOG(INFO) << "------------------------------------------------------------------------";
-		LOG(INFO) << "| Data\t\t\t\t| Reference\t\t| Yours";
+		LOG(INFO) << "| Data\t\t\t\t\t| Reference\t| Yours";
 		LOG(INFO) << "------------------------------------------------------------------------";
 		LOG(INFO) << "| Shape\t\t| Average\t\t| -57239\t| " << m_vecShapeMu(0);
-		LOG(INFO) << "| \t\t| Variance\t\t| 884340\t\t| " << m_vecShapeEv(0);
+		LOG(INFO) << "| \t\t| Variance\t\t| 884340\t| " << m_vecShapeEv(0);
 		LOG(INFO) << "| \t\t| Principle component\t| -0.0024\t| " << m_matShapePc(0, 0);
 		LOG(INFO) << "------------------------------------------------------------------------";
-		LOG(INFO) << "| Texture\t| Average\t\t| 182.8750\t\t| " << m_vecTexMu(0);
-		LOG(INFO) << "| \t\t| Variance\t\t| 4103.2\t\t| " << m_vecTexEv(0);
+		LOG(INFO) << "| Texture\t| Average\t\t| 182.8750\t| " << m_vecTexMu(0);
+		LOG(INFO) << "| \t\t| Variance\t\t| 4103.2\t| " << m_vecTexEv(0);
 		LOG(INFO) << "| \t\t| Principle component\t| -0.0028\t| " << m_matTexPc(0, 0);
 		LOG(INFO) << "------------------------------------------------------------------------";
 		LOG(INFO) << "| Expression\t| Average\t\t| 182.875\t| " << m_vecExprMu(0);
-		LOG(INFO) << "| \t\t| Variance\t\t| 4103.2\t\t| " << m_vecExprEv(0);
+		LOG(INFO) << "| \t\t| Variance\t\t| 4103.2\t| " << m_vecExprEv(0);
 		LOG(INFO) << "| \t\t| Principle component\t| -0.0028\t| " << m_matExprPc(0, 0);
 		LOG(INFO) << "------------------------------------------------------------------------";
-		LOG(INFO) << "| Triangle list\t\t\t| 1\t\t| " << m_vecTriangleList(0);
+		LOG(INFO) << "| Triangle list\t\t\t\t| 1\t\t| " << m_vecTriangleList(0);
 		LOG(INFO) << "------------------------------------------------------------------------";
 	}
 
@@ -521,8 +521,7 @@ private:
 
 	// landmarks
 	bool m_bUseLandmark;
-	unsigned int m_nLandmarks;
-	std::map<int, int> m_mapLandmarkIndices; 
+	std::vector<std::pair<int, int>> m_mapLandmarkIndices; 
 	Eigen::VectorXd m_vecLandmarkShapeMu;
 	Eigen::MatrixXd m_matLandmarkShapePc;
 	Eigen::VectorXd m_vecLandmarkExprMu;

@@ -138,12 +138,11 @@ BfmManager::BfmManager(
 		std::ifstream inFile;
 		inFile.open(strLandmarkIdxPath, std::ios::in);
 		assert(inFile.is_open());
-		m_nLandmarks = 0;
 		int dlibIdx, bfmIdx;
 		while(inFile >> dlibIdx >> bfmIdx)
 		{
-			m_mapLandmarkIndices[dlibIdx - 1] = bfmIdx;
-			m_nLandmarks++;
+			// dlibIdx--;
+			m_mapLandmarkIndices.push_back(std::make_pair(dlibIdx - 1, std::move(bfmIdx)));
 		}
 		inFile.close();
 	}
@@ -180,7 +179,7 @@ BfmManager::BfmManager(
 	LOG(INFO) << "Number of dlib landmarks:\t\t68";
 	if(m_bUseLandmark)
 	{
-		LOG(INFO) << "Number of custom landmarks:\t\t" << m_nLandmarks;
+		LOG(INFO) << "Number of custom landmarks:\t\t" << m_mapLandmarkIndices.size();
 		LOG(INFO) << "Corresponding between dlib and custom:\t" << m_strLandmarkIdxPath;
 	}
 	else
@@ -224,12 +223,13 @@ void BfmManager::alloc()
 	m_vecCurrentExpr.resize(m_nVertices * 3);
 	m_vecCurrentBlendshape.resize(m_nVertices * 3);
 
+	auto nLandmarks = m_mapLandmarkIndices.size();
 	if (m_bUseLandmark) 
 	{
-		m_vecLandmarkShapeMu.resize(m_nLandmarks * 3);
-		m_matLandmarkShapePc.resize(m_nLandmarks * 3, m_nIdPcs);
-		m_vecLandmarkExprMu.resize(m_nLandmarks * 3);
-		m_matLandmarkExprPc.resize(m_nLandmarks * 3, m_nExprPcs);
+		m_vecLandmarkShapeMu.resize(nLandmarks * 3);
+		m_matLandmarkShapePc.resize(nLandmarks * 3, m_nIdPcs);
+		m_vecLandmarkExprMu.resize(nLandmarks * 3);
+		m_matLandmarkExprPc.resize(nLandmarks * 3, m_nExprPcs);
 	}
 }
 
@@ -544,7 +544,7 @@ void BfmManager::writePly(std::string fn, long mode) const
 		out.write((char *)&b, sizeof(b));
 	}
 
-	if ((mode & ModelWriteMode_PickLandmark) && cnt != m_nLandmarks) 
+	if ((mode & ModelWriteMode_PickLandmark) && cnt != m_mapLandmarkIndices.size()) 
 	{
 		LOG(ERROR) << "Pick too less landmarks.";
 		LOG(ERROR) << "Number of picked points is " << cnt;
@@ -582,14 +582,14 @@ void BfmManager::writeLandmarkPly(std::string fn) const {
 	out << "ply\n";
 	out << "format binary_little_endian 1.0\n";
 	out << "comment Made from the 3D Morphable Face Model of the Univeristy of Basel, Switzerland.\n";
-	out << "element vertex " << m_nLandmarks << "\n";
+	out << "element vertex " << m_mapLandmarkIndices.size() << "\n";
 	out << "property float x\n";
 	out << "property float y\n";
 	out << "property float z\n";
 	out << "end_header\n";
 
 	int cnt = 0;
-	for (int i = 0; i < m_nLandmarks; i++) 
+	for (int i = 0; i < m_mapLandmarkIndices.size(); i++) 
 	{
 		float x, y, z;
 		x = float(m_vecLandmarkCurrentBlendshape(i * 3));
