@@ -28,30 +28,46 @@ int main(int argc, char *argv[])
     FLAGS_log_prefix = true; 
     FLAGS_colorlogtostderr =true;
 
-	std::ifstream in;
-	if(argc > 1)
-		in.open(argv[1], std::ios::in);
-	else
-		in.open("./example/example-inputs.txt", std::ios::in);
-	if(!in.is_open())
-	{
-		LOG(ERROR) << "Cannot open inputs.txt";
-		exit(-1);
-	}
+    // command options
+    po::options_description opts("Options");
+    po::variables_map vm;
 
-	std::string sBfmH5Path, sLandmarkIdxPath = "";
-	std::array<double, N_INT_PARAMS> aIntParams = { };
-	
-	in >> sBfmH5Path;
-	for(auto i = 0; i < N_INT_PARAMS; i++)
-		in >> aIntParams[i];
-	if(!in.eof())
-		in >> sLandmarkIdxPath;
-	else
-		sLandmarkIdxPath = "";
-	in.close();
+    string sBfmH5Path, sLandmarkIdxPath;
+	double dFx, dFy, dCx, dCy;
 
+    opts.add_options()
+        ("bfm_h5_path", po::value<string>(&sBfmH5Path)->default_value(
+            R"(/home/keith/Data/BaselFaceModel_mod.h5)"), 
+            "Path of Basel Face Model.")
+        ("landmark_idx_path", po::value<string>(&sLandmarkIdxPath)->default_value(
+            R"(/home/keith/Project/head-pose-estimation/data/example_landmark_68.anl)"), 
+            "Path of corresponding between dlib and model vertex index.")
+        ("fx", po::value<double>(&dFx)->default_value(1744.327628674942))
+		("fy", po::value<double>(&dFx)->default_value(1747.838275588676))
+		("cx", po::value<double>(&dFx)->default_value(800))
+		("cy", po::value<double>(&dFx)->default_value(600))
+        ("help,h", "Help message"); 
+    try
+    {
+        po::store(po::parse_command_line(argc, argv, opts), vm);
+    }
+    catch(...)
+    {
+        LOG(ERROR) << "These exists undefined command options.";
+        return -1;
+    }
+
+    po::notify(vm);
+    if(vm.count("help"))
+    {
+        LOG(INFO) << opts;
+        return 0;
+    }
+
+	std::array<double, N_INT_PARAMS> aIntParams = { dFx, dFy, dCx, dCy };
 	std::unique_ptr<BfmManager> pBfmManager(new BfmManager(sBfmH5Path, aIntParams, sLandmarkIdxPath));
+
+    pBfmManager->writeLandmarkPly("landmarks.ply");
 
 	pBfmManager->genAvgFace();
 	pBfmManager->writePly("avg_face.ply", ModelWriteMode_None);

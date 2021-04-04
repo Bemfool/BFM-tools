@@ -31,7 +31,7 @@ target_include_directories(bfm_manager PUBLIC ${OpenCV_INCLUDE_DIRS})
 find_package(Glog REQUIRED)
 include_directories(${GLOG_INCLUDE_DIRS})
 
-find_package(Boost REQUIRED system filesystem)
+find_package(Boost REQUIRED system filesystem program_options)
 include_directories(${Boost_INCLUDE_DIRS})
 
 if(UNIX)

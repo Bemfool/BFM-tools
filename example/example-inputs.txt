@@ -1,3 +1,0 @@
-/home/bemfoo/Data/BaselFaceModel_mod.h5
-1744.327628674942 1747.838275588676 800 600
-../data/example_landmark_68.anl
