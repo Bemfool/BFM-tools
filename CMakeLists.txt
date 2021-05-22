@@ -14,6 +14,11 @@ target_compile_features(bfm_manager PRIVATE cxx_std_17)
 ######################################## Dedendency ###########################################
 ###############################################################################################
 
+if(CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -Wall -Wextra -Wundef -pedantic")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpmath=sse -funroll-loops -Wno-reorder")
+endif()
+
 # Eigen3
 if(UNIX)
    include_directories("/usr/include/eigen3")
@@ -30,6 +35,14 @@ target_include_directories(bfm_manager PUBLIC ${OpenCV_INCLUDE_DIRS})
 
 find_package(Glog REQUIRED)
 include_directories(${GLOG_INCLUDE_DIRS})
+
+FIND_PACKAGE( OpenMP REQUIRED)
+if(OPENMP_FOUND)
+   message("OPENMP FOUND")
+   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
 
 find_package(Boost REQUIRED system filesystem program_options)
 include_directories(${Boost_INCLUDE_DIRS})
