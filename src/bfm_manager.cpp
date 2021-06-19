@@ -558,8 +558,6 @@ void BfmManager::writePly(std::string fn, long mode) const
 		int x = m_vecTriangleList(iFace * 3) - 1;
 		int y = m_vecTriangleList(iFace * 3 + 1) - 1;
 		int z = m_vecTriangleList(iFace * 3 + 2) - 1;
-		if(iFace < 10)
-			std::cout << x << " " << y << " " << z << std::endl;
 		out.write((char *)&y, sizeof(y));
 		out.write((char *)&x, sizeof(x));
 		out.write((char *)&z, sizeof(z));
