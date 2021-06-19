@@ -230,11 +230,11 @@ public:
 
 	inline const std::string& getStrModelPath() const { return m_strModelPath; }
 
-	inline const unsigned int getNIdPcs() const { return m_nIdPcs; }
-	inline const unsigned int getNExprPcs() const { return m_nExprPcs; }
-	inline const unsigned int getNFaces() const { return m_nFaces; }
-	inline const unsigned int getNVertices() const { return m_nVertices; }
-	inline const unsigned int getNLandmarks() const { return m_mapLandmarkIndices.size(); }
+	inline unsigned int getNIdPcs() const { return m_nIdPcs; }
+	inline unsigned int getNExprPcs() const { return m_nExprPcs; }
+	inline unsigned int getNFaces() const { return m_nFaces; }
+	inline unsigned int getNVertices() const { return m_nVertices; }
+	inline unsigned int getNLandmarks() const { return m_mapLandmarkIndices.size(); }
 	
 	inline double *getMutableShapeCoef() { return m_aShapeCoef; }
 	inline double *getMutableTexCoef() { return m_aTexCoef; }
@@ -250,16 +250,16 @@ public:
 	inline const Matrix3d &getMatR() const { return m_matR; }
 	inline const Vector3d &getVecT() const { return m_vecT; }
 
-	inline const double getFx() const { return m_aIntParams[0]; }
-	inline const double getFy() const { return m_aIntParams[1]; }
-	inline const double getCx() const { return m_aIntParams[2]; }
-	inline const double getCy() const { return m_aIntParams[3]; }
-	inline const double getRoll() const { return m_aExtParams[0]; }
-	inline const double getYaw() const { return m_aExtParams[1]; }
-	inline const double getPitch() const { return m_aExtParams[2]; }
-	inline const double getTx() const { return m_aExtParams[3]; }
-	inline const double getTy() const { return m_aExtParams[4]; }
-	inline const double getTz() const { return m_aExtParams[5]; }
+	inline double getFx() const { return m_aIntParams[0]; }
+	inline double getFy() const { return m_aIntParams[1]; }
+	inline double getCx() const { return m_aIntParams[2]; }
+	inline double getCy() const { return m_aIntParams[3]; }
+	inline double getRoll() const { return m_aExtParams[0]; }
+	inline double getYaw() const { return m_aExtParams[1]; }
+	inline double getPitch() const { return m_aExtParams[2]; }
+	inline double getTx() const { return m_aExtParams[3]; }
+	inline double getTy() const { return m_aExtParams[4]; }
+	inline double getTz() const { return m_aExtParams[5]; }
 	void setRoll(double dRoll)   { m_aExtParams[0] = dRoll;  this->genRMat();}
 	void setYaw(double dYaw)     { m_aExtParams[1] = dYaw;   this->genRMat();}
 	void setPitch(double dPitch) { m_aExtParams[2] = dPitch; this->genRMat();}
