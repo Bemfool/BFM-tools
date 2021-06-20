@@ -32,8 +32,8 @@ int main(int argc, char *argv[])
     po::options_description opts("Options");
     po::variables_map vm;
 
-    string sBfmH5Path, sLandmarkIdxPath;
-	double dFx, dFy, dCx, dCy;
+    std::string sBfmH5Path, sLandmarkIdxPath;
+	double dFx = 0.0, dFy = 0.0, dCx = 0.0, dCy = 0.0;
 
     opts.add_options()
         ("bfm_h5_path", po::value<string>(&sBfmH5Path)->default_value(

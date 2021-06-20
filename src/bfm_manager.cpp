@@ -559,7 +559,6 @@ void BfmManager::writePly(std::string fn, long mode) const
 		int y = m_vecTriangleList(iFace * 3 + 1) - 1;
 		int z = m_vecTriangleList(iFace * 3 + 2) - 1;
 
-		// Invert normal
 		out.write((char *)&x, sizeof(x));
 		out.write((char *)&y, sizeof(y));
 		out.write((char *)&z, sizeof(z));
